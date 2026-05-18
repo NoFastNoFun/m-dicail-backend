@@ -1,0 +1,39 @@
+services:
+  gateway:
+    build: ./apps/gateway
+    ports:
+      - "50051:50051"
+    environment:
+      - ANONYMIZATION_SERVICE_HOST=anonymization_service
+      - ANONYMIZATION_SERVICE_PORT=50052
+      - AI_SERVICE_HOST=ai_service
+      - AI_SERVICE_PORT=50053
+      - PUBMED_SERVICE_HOST=pubmed_service
+      - PUBMED_SERVICE_PORT=50054
+      - REPORT_SERVICE_HOST=report_service
+      - REPORT_SERVICE_PORT=50055
+    depends_on:
+      - anonymization_service
+      - ai_service
+      - pubmed_service
+      - report_service
+
+  anonymization_service:
+    build: ./services/anonymization_service
+    expose:
+      - "50052"
+
+  ai_service:
+    build: ./services/ai_service
+    expose:
+      - "50053"
+
+  pubmed_service:
+    build: ./services/pubmed_service
+    expose:
+      - "50054"
+
+  report_service:
+    build: ./services/report_service
+    expose:
+      - "50055"

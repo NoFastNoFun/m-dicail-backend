@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package pubmed;
+
+service PubMedService {
+  rpc Search(PubMedSearchRequest) returns (PubMedSearchResponse);
+}
+
+message PubMedSearchRequest {
+  string query = 1;
+  int32 max_results = 2;
+}
+
+message PubMedSearchResponse {
+  repeated PubMedArticle articles = 1;
+}
+
+message PubMedArticle {
+  string pmid = 1;
+  string title = 2;
+  string abstract = 3;
+  string authors = 4;
+  string publication_date = 5;
+  string doi = 6;
+}
