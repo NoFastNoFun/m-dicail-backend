@@ -19,7 +19,9 @@ services:
       - report_service
 
   anonymization_service:
-    build: ./services/anonymization_service
+    build:
+      context: .
+      dockerfile: services/anonymization_service/Dockerfile
     expose:
       - "50052"
 
