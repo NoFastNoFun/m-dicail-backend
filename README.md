@@ -62,6 +62,9 @@ docker-compose up --build
 
 ## API
 
+### Docs accessible here
+- Gateway: http://localhost:8000/docs
+
 ### Gateway endpoints
 
 | Method | Path | Description |
