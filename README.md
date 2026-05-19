@@ -36,7 +36,21 @@ service/
 
 ```bash
 python -m venv .venv
-.venv\Scripts\Activate.ps1   # Windows
+```
+
+Activate the virtual environment depending on your OS:
+
+```bash
+# Windows (PowerShell) — venv creates: Include/, Lib/, Scripts/
+.\.venv\Scripts\Activate.ps1
+
+# macOS / Linux — venv creates: include/, lib/, bin/
+source .venv/bin/activate
+```
+
+Then install dependencies:
+
+```bash
 pip install fastapi uvicorn httpx pydantic
 ```
 
@@ -64,3 +78,152 @@ docker-compose up --build
 | ai_service | 8002 | `POST /generate` | Mistral inference |
 | pubmed_service | 8003 | `POST /search` | PubMed article search |
 | report_service | 8004 | `POST /generate` | Report / PDF generation |
+
+---
+
+## Schemas
+
+### Gateway — `POST /notes/process`
+
+Request:
+```json
+{
+  "raw_text": "string",
+  "session_id": "string",
+  "language": "fr"
+}
+```
+
+Response:
+```json
+{
+  "session_id": "string",
+  "anonymized_text": "string",
+  "ai_response": {}
+}
+```
+
+### Gateway — `POST /recommendations`
+
+Request:
+```json
+{
+  "session_id": "string",
+  "clinical_context": "string",
+  "language": "fr"
+}
+```
+
+Response: same shape as the AI service `POST /generate` response (see below), with `session_id` added.
+
+### Gateway — `POST /reports/generate`
+
+Request:
+```json
+{
+  "session_id": "string",
+  "content": "string",
+  "format": "text"
+}
+```
+
+Response: same shape as the report service `POST /generate` response (see below).
+
+---
+
+### anonymization_service — `POST /anonymize`
+
+Request:
+```json
+{
+  "text": "string",
+  "language": "fr"
+}
+```
+
+Response:
+```json
+{
+  "anonymized_text": "string",
+  "entities": [
+    {
+      "label": "string",
+      "original_value": "string",
+      "placeholder": "string",
+      "start": 0,
+      "end": 0
+    }
+  ]
+}
+```
+
+### ai_service — `POST /generate`
+
+Request:
+```json
+{
+  "anonymized_text": "string",
+  "clinical_context": "",
+  "pubmed_results": [],
+  "language": "fr"
+}
+```
+
+Response:
+```json
+{
+  "summary": "string",
+  "recommendations": ["string"],
+  "exercises": ["string"],
+  "evidence_level": "string",
+  "sources": ["string"],
+  "precautions": ["string"]
+}
+```
+
+### pubmed_service — `POST /search`
+
+Request:
+```json
+{
+  "query": "string",
+  "max_results": 10
+}
+```
+
+Response:
+```json
+{
+  "articles": [
+    {
+      "pmid": "string",
+      "title": "string",
+      "abstract": "string",
+      "authors": ["string"],
+      "publication_date": "string",
+      "doi": "string"
+    }
+  ]
+}
+```
+
+### report_service — `POST /generate`
+
+Request:
+```json
+{
+  "session_id": "string",
+  "content": "string",
+  "format": "text"
+}
+```
+
+Response:
+```json
+{
+  "session_id": "string",
+  "report_data": "string",
+  "format": "string",
+  "filename": "string"
+}
+```

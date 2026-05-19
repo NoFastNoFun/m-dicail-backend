@@ -16,3 +16,4 @@ env/
 *.iml
 .DS_Store
 *.pdf
+.zed
