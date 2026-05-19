@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/notes/process", response_model=ProcessNoteResponse)
+@router.post("/notes/process", response_model=ProcessNoteResponse, tags=["Notes"])
 async def process_note(request: ProcessNoteRequest):
     async with httpx.AsyncClient() as client:
         anon_resp = await client.post(
@@ -69,7 +69,7 @@ async def process_note(request: ProcessNoteRequest):
         )
 
 
-@router.post("/recommendations", response_model=RecommendationResponse)
+@router.post("/recommendations", response_model=RecommendationResponse, tags=["Recommendations"])
 async def get_recommendations(request: RecommendationRequest):
     async with httpx.AsyncClient() as client:
         pubmed_resp = await client.post(
@@ -104,7 +104,7 @@ async def get_recommendations(request: RecommendationRequest):
         )
 
 
-@router.post("/reports/generate", response_model=ReportResponse)
+@router.post("/reports/generate", response_model=ReportResponse, tags=["Reports"])
 async def generate_report(request: ReportRequest):
     async with httpx.AsyncClient() as client:
         report_resp = await client.post(
