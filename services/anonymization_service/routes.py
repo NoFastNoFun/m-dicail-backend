@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter
 
-from schemas import AnonymizeRequest, AnonymizeResponse
+from .schemas import AnonymizeRequest, AnonymizeResponse
 
 logger = logging.getLogger(__name__)
 

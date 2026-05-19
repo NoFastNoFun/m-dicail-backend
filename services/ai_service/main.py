@@ -3,8 +3,8 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 
-from config import PORT
-from routes import router
+from .config import PORT
+from .routes import router
 
 logging.basicConfig(level=logging.INFO)
 

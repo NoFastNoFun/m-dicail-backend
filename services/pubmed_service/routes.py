@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter
 
-from schemas import SearchRequest, SearchResponse
+from .schemas import SearchRequest, SearchResponse
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter
 
-from schemas import ReportRequest, ReportResponse
+from .schemas import ReportRequest, ReportResponse
 
 logger = logging.getLogger(__name__)
 
