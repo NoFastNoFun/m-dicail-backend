@@ -3,8 +3,8 @@ import logging
 import httpx
 from fastapi import APIRouter, HTTPException
 
-from .config import AI_URL, ANONYMIZATION_URL, PUBMED_URL, REPORT_URL
-from .schemas import ProcessNoteRequest, ProcessNoteResponse, RecommendationRequest, ReportRequest
+from config import AI_URL, ANONYMIZATION_URL, PUBMED_URL, REPORT_URL
+from schemas import ProcessNoteRequest, ProcessNoteResponse, RecommendationRequest, ReportRequest
 
 logger = logging.getLogger(__name__)
 
