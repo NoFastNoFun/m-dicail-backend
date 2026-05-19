@@ -4,7 +4,17 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from .config import AI_URL, ANONYMIZATION_URL, PUBMED_URL, REPORT_URL
-from .schemas import ProcessNoteRequest, ProcessNoteResponse, RecommendationRequest, ReportRequest
+from .schemas import (
+    AIGenerateResponse,
+    AnonymizeResponse,
+    ProcessNoteRequest,
+    ProcessNoteResponse,
+    RecommendationRequest,
+    RecommendationResponse,
+    ReportRequest,
+    ReportResponse,
+    SearchResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -14,65 +24,97 @@ router = APIRouter()
 @router.post("/notes/process", response_model=ProcessNoteResponse)
 async def process_note(request: ProcessNoteRequest):
     async with httpx.AsyncClient() as client:
-        anon_resp = await client.post(f"{ANONYMIZATION_URL}/anonymize", json={
-            "text": request.raw_text,
-            "language": request.language,
-        })
+        anon_resp = await client.post(
+            f"{ANONYMIZATION_URL}/anonymize",
+            json={
+                "text": request.raw_text,
+                "language": request.language,
+            },
+        )
         if anon_resp.status_code != 200:
             raise HTTPException(status_code=502, detail="Anonymization service error")
-        anon_data = anon_resp.json()
+        anon_data = AnonymizeResponse.model_validate(anon_resp.json())
 
-        pubmed_resp = await client.post(f"{PUBMED_URL}/search", json={
-            "query": anon_data["anonymized_text"],
-            "max_results": 5,
-        })
-        pubmed_results = pubmed_resp.json().get("articles", []) if pubmed_resp.status_code == 200 else []
+        pubmed_resp = await client.post(
+            f"{PUBMED_URL}/search",
+            json={
+                "query": anon_data.anonymized_text,
+                "max_results": 5,
+            },
+        )
+        pubmed_articles = (
+            SearchResponse.model_validate(pubmed_resp.json()).articles
+            if pubmed_resp.status_code == 200
+            else []
+        )
+        pubmed_results = [a.model_dump() for a in pubmed_articles]
 
-        ai_resp = await client.post(f"{AI_URL}/generate", json={
-            "anonymized_text": anon_data["anonymized_text"],
-            "clinical_context": "",
-            "pubmed_results": pubmed_results,
-            "language": request.language,
-        })
+        ai_resp = await client.post(
+            f"{AI_URL}/generate",
+            json={
+                "anonymized_text": anon_data.anonymized_text,
+                "clinical_context": "",
+                "pubmed_results": pubmed_results,
+                "language": request.language,
+            },
+        )
         if ai_resp.status_code != 200:
             raise HTTPException(status_code=502, detail="AI service error")
+        ai_data = AIGenerateResponse.model_validate(ai_resp.json())
 
         return ProcessNoteResponse(
             session_id=request.session_id,
-            anonymized_text=anon_data["anonymized_text"],
-            ai_response=ai_resp.json(),
+            anonymized_text=anon_data.anonymized_text,
+            ai_response=ai_data,
         )
 
 
-@router.post("/recommendations")
+@router.post("/recommendations", response_model=RecommendationResponse)
 async def get_recommendations(request: RecommendationRequest):
     async with httpx.AsyncClient() as client:
-        pubmed_resp = await client.post(f"{PUBMED_URL}/search", json={
-            "query": request.clinical_context,
-            "max_results": 5,
-        })
-        pubmed_results = pubmed_resp.json().get("articles", []) if pubmed_resp.status_code == 200 else []
+        pubmed_resp = await client.post(
+            f"{PUBMED_URL}/search",
+            json={
+                "query": request.clinical_context,
+                "max_results": 5,
+            },
+        )
+        pubmed_articles = (
+            SearchResponse.model_validate(pubmed_resp.json()).articles
+            if pubmed_resp.status_code == 200
+            else []
+        )
+        pubmed_results = [a.model_dump() for a in pubmed_articles]
 
-        ai_resp = await client.post(f"{AI_URL}/generate", json={
-            "anonymized_text": request.clinical_context,
-            "clinical_context": request.clinical_context,
-            "pubmed_results": pubmed_results,
-            "language": request.language,
-        })
+        ai_resp = await client.post(
+            f"{AI_URL}/generate",
+            json={
+                "anonymized_text": request.clinical_context,
+                "clinical_context": request.clinical_context,
+                "pubmed_results": pubmed_results,
+                "language": request.language,
+            },
+        )
         if ai_resp.status_code != 200:
             raise HTTPException(status_code=502, detail="AI service error")
+        ai_data = AIGenerateResponse.model_validate(ai_resp.json())
 
-        return {"session_id": request.session_id, **ai_resp.json()}
+        return RecommendationResponse(
+            session_id=request.session_id, **ai_data.model_dump()
+        )
 
 
-@router.post("/reports/generate")
+@router.post("/reports/generate", response_model=ReportResponse)
 async def generate_report(request: ReportRequest):
     async with httpx.AsyncClient() as client:
-        report_resp = await client.post(f"{REPORT_URL}/generate", json={
-            "session_id": request.session_id,
-            "content": request.content,
-            "format": request.format,
-        })
+        report_resp = await client.post(
+            f"{REPORT_URL}/generate",
+            json={
+                "session_id": request.session_id,
+                "content": request.content,
+                "format": request.format,
+            },
+        )
         if report_resp.status_code != 200:
             raise HTTPException(status_code=502, detail="Report service error")
-        return report_resp.json()
+        return ReportResponse.model_validate(report_resp.json())
