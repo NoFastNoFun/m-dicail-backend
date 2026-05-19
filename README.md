@@ -6,28 +6,38 @@ Backend monorepo for the m-dicail physiotherapist assistant.
 
 ```
 Flutter app
-    ↓ gRPC
-Gateway (port 50051)
-    ├─→ anonymization_service (port 50052)
-    ├─→ ai_service            (port 50053)
-    ├─→ pubmed_service        (port 50054)
-    └─→ report_service        (port 50055)
+    ↓ HTTP REST
+Gateway (port 8000)
+    ├─→ anonymization_service (port 8001)
+    ├─→ ai_service            (port 8002)
+    ├─→ pubmed_service        (port 8003)
+    └─→ report_service        (port 8004)
 ```
 
 ## Structure
 
-- `apps/gateway/` — gRPC gateway, entry point for the Flutter client
-- `services/` — internal gRPC services (not exposed externally)
-- `proto/` — source of truth for all service contracts
-- `scripts/` — tooling
+- `apps/gateway/` — REST gateway, entry point for the Flutter client
+- `services/` — internal REST services (not exposed externally)
+
+Each service follows the same internal layout:
+
+```
+service/
+├── __init__.py   # Python package
+├── config.py     # port and environment variables
+├── schemas.py    # Pydantic request/response models
+├── routes.py     # FastAPI router and business logic
+└── main.py       # app creation, router registration, uvicorn startup
+```
 
 ## Getting started
 
-### Generate proto stubs
+### Local setup
 
 ```bash
-pip install grpcio-tools
-bash scripts/generate_proto.sh
+python -m venv .venv
+.venv\Scripts\Activate.ps1   # Windows
+pip install fastapi uvicorn httpx pydantic
 ```
 
 ### Run with Docker
@@ -36,12 +46,21 @@ bash scripts/generate_proto.sh
 docker-compose up --build
 ```
 
-## Services
+## API
 
-| Service | Port | Role |
+### Gateway endpoints
+
+| Method | Path | Description |
 |---|---|---|
-| gateway | 50051 | Entry point, orchestration |
-| anonymization_service | 50052 | NLP/NER anonymisation |
-| ai_service | 50053 | Mistral inference |
-| pubmed_service | 50054 | PubMed search |
-| report_service | 50055 | Report / PDF generation |
+| POST | `/notes/process` | Anonymize a clinical note and get an AI response |
+| POST | `/recommendations` | Get clinical recommendations from AI + PubMed |
+| POST | `/reports/generate` | Generate a text or PDF report |
+
+### Internal service endpoints
+
+| Service | Port | Endpoint | Description |
+|---|---|---|---|
+| anonymization_service | 8001 | `POST /anonymize` | NLP/NER PII anonymization |
+| ai_service | 8002 | `POST /generate` | Mistral inference |
+| pubmed_service | 8003 | `POST /search` | PubMed article search |
+| report_service | 8004 | `POST /generate` | Report / PDF generation |

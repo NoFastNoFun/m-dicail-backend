@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 50055
+EXPOSE 8004
 
 CMD ["python", "main.py"]

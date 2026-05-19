@@ -1,20 +1,15 @@
-import grpc
-from concurrent import futures
 import logging
 
+import uvicorn
+from fastapi import FastAPI
+
+from .config import PORT
+from .routes import router
+
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-PORT = 50055
-
-
-def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    server.add_insecure_port(f"[::]:{PORT}")
-    logger.info(f"report_service starting on port {PORT}...")
-    server.start()
-    server.wait_for_termination()
-
+app = FastAPI(title="Report Service")
+app.include_router(router)
 
 if __name__ == "__main__":
-    serve()
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
