@@ -1,3 +1,7 @@
+# Ligatures typographiques à remplacer avant suppression des accents.
+# NFKD ne les décompose pas, elles seraient sinon perdues par le re.sub.
+LIGATURES = {"œ": "oe", "æ": "ae", "ß": "ss"}
+
 STOP_WORDS = {
     # articles
     "le", "la", "les", "l", "un", "une", "des", "du", "de", "d",
