@@ -18,6 +18,7 @@ def test_heavy_punctuation():
     assert result == ["douleur", "inflammation", "rougeur", "chaleur", "oedeme"]
 
 
+
 def test_ligature_oe():
     result = clean_text_for_query("douleur au niveau du cœur")
     assert result == ["douleur", "niveau", "coeur"]
