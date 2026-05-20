@@ -1,6 +1,6 @@
 import pytest
 
-from services.pubmed_service.text_utils import clean_text_for_query
+from services.pubmed_service.clean_text_logic.text_utils import clean_text_for_query
 
 
 def test_clinical_note_basic():
