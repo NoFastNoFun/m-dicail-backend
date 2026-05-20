@@ -1,7 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
-
-# --- Requests ---
 
 class ProcessNoteRequest(BaseModel):
     raw_text: str
@@ -20,8 +18,6 @@ class ReportRequest(BaseModel):
     content: str
     format: str = "text"
 
-
-# --- Internal service responses ---
 
 class AnonymizeResponse(BaseModel):
     anonymized_text: str
@@ -57,8 +53,6 @@ class ReportResponse(BaseModel):
     filename: str
 
 
-# --- Gateway responses ---
-
 class ProcessNoteResponse(BaseModel):
     session_id: str
     anonymized_text: str
@@ -73,3 +67,14 @@ class RecommendationResponse(BaseModel):
     evidence_level: str
     sources: list[str]
     precautions: list[str]
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str | None = None
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str    

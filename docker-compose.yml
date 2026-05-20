@@ -12,11 +12,15 @@ services:
       - PUBMED_SERVICE_PORT=8003
       - REPORT_SERVICE_HOST=report_service
       - REPORT_SERVICE_PORT=8004
+      - AUTH_SERVICE_HOST=auth_service
+      - AUTH_SERVICE_PORT=8005
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
     depends_on:
       - anonymization_service
       - ai_service
       - pubmed_service
       - report_service
+      - auth_service
 
   anonymization_service:
     build: ./services/anonymization_service
@@ -37,3 +41,11 @@ services:
     build: ./services/report_service
     expose:
       - "8004"
+
+  auth_service:
+    build: ./services/auth_service
+    expose:
+      - "8005"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DATABASE_URL=sqlite:////app/auth.db
