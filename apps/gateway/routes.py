@@ -8,6 +8,7 @@ from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL, REPORT_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
+    Article,
     LoginRequest,
     ProcessNoteRequest,
     ProcessNoteResponse,
@@ -16,7 +17,6 @@ from .schemas import (
     RegisterRequest,
     ReportRequest,
     ReportResponse,
-    SearchResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -77,8 +77,8 @@ async def process_note(request: ProcessNoteRequest):
                 "max_results": 5,
             },
         )
-        pubmed_articles = (
-            SearchResponse.model_validate(pubmed_resp.json()).articles
+        pubmed_articles: list[Article] = (
+            [Article.model_validate(a) for a in pubmed_resp.json()]
             if pubmed_resp.status_code == 200
             else []
         )
@@ -114,8 +114,8 @@ async def get_recommendations(request: RecommendationRequest):
                 "max_results": 5,
             },
         )
-        pubmed_articles = (
-            SearchResponse.model_validate(pubmed_resp.json()).articles
+        pubmed_articles: list[Article] = (
+            [Article.model_validate(a) for a in pubmed_resp.json()]
             if pubmed_resp.status_code == 200
             else []
         )

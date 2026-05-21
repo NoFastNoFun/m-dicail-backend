@@ -33,9 +33,6 @@ class Article(BaseModel):
     doi: str
 
 
-class SearchResponse(BaseModel):
-    articles: list[Article]
-
 
 class AIGenerateResponse(BaseModel):
     summary: str
