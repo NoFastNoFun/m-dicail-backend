@@ -1,6 +1,8 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from .auth import create_access_token, get_current_user, hash_password, verify_password
@@ -10,28 +12,31 @@ from .schemas import LoginRequest, RegisterRequest, RegisterResponse, TokenRespo
 
 logger = logging.getLogger(__name__)
 
+limiter = Limiter(key_func=get_remote_address)
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=201)
-def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == request.email).first():
+@limiter.limit("5/minute")
+def register(request: Request, body: RegisterRequest, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == body.email).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email déjà utilisé",
         )
 
     user = User(
-        email=request.email,
-        hashed_password=hash_password(request.password),
-        full_name=request.full_name,
+        email=body.email,
+        hashed_password=hash_password(body.password),
+        full_name=body.full_name,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
-    logger.info(f"Nouvel utilisateur enregistré : {user.email}")
+    logger.info(f"Nouvel utilisateur enregistré : id={user.id}")
 
     return RegisterResponse(
         user=UserResponse.model_validate(user),
@@ -40,10 +45,11 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
+@limiter.limit("10/minute")
+def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == body.email).first()
 
-    if not user or not verify_password(request.password, user.hashed_password):
+    if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect",
@@ -51,7 +57,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         )
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
-    logger.info(f"Connexion réussie : {user.email}")
+    logger.info(f"Connexion réussie : id={user.id}")
 
     return TokenResponse(access_token=token)
 

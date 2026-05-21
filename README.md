@@ -8,11 +8,11 @@ Backend monorepo for the m-dicail physiotherapist assistant.
 Flutter app
     ↓ HTTP REST
 Gateway (port 8000)
-    ├─→ auth_service           (port 8005)
     ├─→ anonymization_service  (port 8001)
     ├─→ ai_service             (port 8002)
     ├─→ pubmed_service         (port 8003)
-    └─→ report_service         (port 8004)
+    ├─→ report_service         (port 8004)
+    └─→ auth_service           (port 8005)
 ```
 
 ## Structure
@@ -37,20 +37,22 @@ The `auth_service` has additional files:
 auth_service/
 ├── __init__.py
 ├── config.py
-├── database.py        # SQLAlchemy engine, session, Base
-├── models.py          # User ORM model
-├── auth.py            # password hashing (argon2), JWT creation/validation
-├── schemas.py
-├── routes.py
+├── database.py           # SQLAlchemy engine, session, Base
+├── models.py             # User ORM model
+├── auth.py               # password hashing (argon2), JWT creation/validation
+├── schemas.py            # Pydantic models + password strength validation
+├── routes.py             # auth endpoints + rate limiting (slowapi)
 ├── main.py
 ├── requirements.txt
+├── requirements-dev.txt  # test dependencies (pytest)
 ├── Dockerfile
-└── migrations/        # Alembic migrations — one file per domain
+├── tests/
+│   └── test_auth.py      # unit tests for hash_password / verify_password
+└── migrations/           # Alembic migrations — one file per domain
     ├── env.py
     ├── script.py.mako
     └── versions/
-        ├── 001_auth.py      # users table
-        └── 002_research.py  # research_queries table
+        └── 001_auth.py   # users table
 ```
 
 The `gateway` has additional files:
@@ -81,10 +83,49 @@ Flutter app
 - Algorithm: `HS256`
 - Expiration: 24h
 - `SECRET_KEY` is shared between `gateway` and `auth_service` via environment variable (`.env` file)
+- `SECRET_KEY` is **required** — the service raises a `RuntimeError` at startup if not set
 
 ### Password hashing
 
 Passwords are hashed using **argon2** (`argon2-cffi`) — more secure than bcrypt, no Rust dependency required.
+
+### Password validation
+
+Passwords are validated at registration via a Pydantic `field_validator`:
+
+| Rule | Requirement |
+|---|---|
+| Length | Minimum 8 characters |
+| Uppercase | At least 1 uppercase letter |
+| Lowercase | At least 1 lowercase letter |
+| Digit | At least 1 digit |
+| Special character | At least 1 special character (`!@#$%^&*...`) |
+
+Invalid passwords return `422 Unprocessable Entity` with a descriptive error message.
+
+### Rate limiting
+
+Endpoints are protected against brute-force attacks via `slowapi`:
+
+| Endpoint | Limit |
+|---|---|
+| `POST /auth/register` | 5 requests/minute per IP |
+| `POST /auth/login` | 10 requests/minute per IP |
+
+Exceeding the limit returns `429 Too Many Requests`.
+
+### RGPD — Logging policy
+
+User personal data is never logged. Only the user `id` is written to logs:
+
+```
+✅ INFO: Nouvel utilisateur enregistré : id=1
+❌ INFO: Nouvel utilisateur enregistré : email=test@test.com  ← interdit
+```
+
+### Database
+
+The project uses **PostgreSQL 15** managed via Docker Compose.
 
 ### Database migrations
 
@@ -93,7 +134,8 @@ Migrations are managed with **Alembic**. Each domain has its own migration file 
 | File | Description |
 |---|---|
 | `001_auth.py` | Creates `users` table |
-| `002_research.py` | Creates `research_queries` table |
+
+> `002_research.py` has been removed from `auth_service` — research queries belong to `pubmed_service` and will be migrated there.
 
 Run migrations manually:
 
@@ -130,7 +172,7 @@ source .venv/bin/activate
 Install dependencies:
 
 ```bash
-pip install fastapi uvicorn httpx pydantic sqlalchemy alembic PyJWT argon2-cffi "pydantic[email]"
+pip install fastapi uvicorn httpx pydantic sqlalchemy alembic PyJWT argon2-cffi "pydantic[email]" slowapi psycopg2-binary
 ```
 
 ### Environment variables
@@ -139,14 +181,24 @@ Create a `.env` file at the root of the project:
 
 ```
 SECRET_KEY=your-secret-key-here
+POSTGRES_PASSWORD=medicail
 ```
 
 > ⚠️ Never commit `.env` to git. Add it to `.gitignore`.
+> ⚠️ `SECRET_KEY` is required — the service will not start without it.
 
 ### Run with Docker
 
 ```bash
 docker compose up --build
+```
+
+### Run tests
+
+```bash
+cd services/auth_service
+pip install -r requirements-dev.txt
+pytest tests/
 ```
 
 ## API
@@ -193,7 +245,7 @@ Request:
 ```json
 {
   "email": "string",
-  "password": "string",
+  "password": "Min8chars+1Uppercase+1digit+1special!",
   "full_name": "string"
 }
 ```
@@ -208,6 +260,24 @@ Response `201`:
   },
   "access_token": "string",
   "token_type": "bearer"
+}
+```
+
+Error `422` — weak password:
+```json
+{
+  "detail": [
+    {
+      "msg": "Le mot de passe doit contenir au moins un caractère spécial"
+    }
+  ]
+}
+```
+
+Error `429` — rate limit exceeded:
+```json
+{
+  "error": "Rate limit exceeded: 5 per 1 minute"
 }
 ```
 
@@ -403,4 +473,3 @@ For future reference, here are the main options for SSO in the medical domain:
 | **Keycloak** | Open-source IAM, supports OIDC/SAML, integrable with PSC | ✅ Recommended for self-hosted setups |
 | **Auth0** | SaaS IAM, HIPAA compliant, OAuth2/OIDC | ✅ Fast to integrate, good for prototyping |
 
-For a production medical application in France, **Pro Santé Connect** is the reference standard for authenticating healthcare professionals.
