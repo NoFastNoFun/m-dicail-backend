@@ -4,7 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL, REPORT_URL
+from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PROTOCOL_URL, PUBMED_URL, REPORT_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
@@ -22,6 +22,29 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+@router.get("/protocols", tags=["Protocols"])
+async def get_protocols(request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{PROTOCOL_URL}/protocols",
+            params=dict(request.query_params),
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/protocols/pathologies/list", tags=["Protocols"])
+async def get_pathologies(request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{PROTOCOL_URL}/protocols/pathologies/list")
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/protocols/{protocol_id}", tags=["Protocols"])
+async def get_protocol(protocol_id: int, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{PROTOCOL_URL}/protocols/{protocol_id}")
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
 
 
 @router.post("/auth/register", tags=["Auth"])
