@@ -27,7 +27,9 @@ service/
 ├── config.py     # port and environment variables
 ├── schemas.py    # Pydantic request/response models
 ├── routes.py     # FastAPI router and business logic
-└── main.py       # app creation, router registration, uvicorn startup
+├── main.py       # app creation, router registration, uvicorn startup
+├── client.py     # external API calls and data parsing (when applicable)
+└── tests/        # pytest test suite (when applicable)
 ```
 
 ## Getting started
@@ -51,7 +53,11 @@ source .venv/bin/activate
 Then install dependencies:
 
 ```bash
-pip install fastapi uvicorn httpx pydantic
+# Production
+pip install -r services/<service_name>/requirements.txt
+
+# Development (includes pytest, respx, anyio)
+pip install -r services/<service_name>/requirements-dev.txt
 ```
 
 ### Run with Docker
@@ -189,26 +195,26 @@ Response:
 Request:
 ```json
 {
-  "query": "string",
-  "max_results": 10
+  "query": "arm pain",
+  "max_results": 3
 }
 ```
 
 Response:
 ```json
-{
-  "articles": [
-    {
-      "pmid": "string",
-      "title": "string",
-      "abstract": "string",
-      "authors": ["string"],
-      "publication_date": "string",
-      "doi": "string"
-    }
-  ]
-}
+[
+  {
+    "pmid": "string",
+    "title": "string",
+    "abstract": "string",
+    "authors": ["string"],
+    "publication_date": "string",
+    "doi": "string"
+  }
+]
 ```
+
+> `NCBI_API_KEY` env var is optional — increases rate limit from 3 to 10 req/sec. Get one at ncbi.nlm.nih.gov/account.
 
 ### report_service — `POST /generate`
 

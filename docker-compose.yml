@@ -32,6 +32,8 @@ services:
     build: ./services/pubmed_service
     expose:
       - "8003"
+    environment:
+      - NCBI_API_KEY=${NCBI_API_KEY:-}
 
   report_service:
     build: ./services/report_service
