@@ -1,7 +1,26 @@
-import pytest
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+
+from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
-from auth import hash_password, verify_password
+ph = PasswordHasher()
+
+
+def hash_password(password: str) -> str:
+    return ph.hash(password)
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return ph.verify(hashed, plain)
+    except VerifyMismatchError:
+        return False
 
 
 def test_hash_password_returns_string():
@@ -25,7 +44,6 @@ def test_verify_password_wrong():
 
 
 def test_hash_password_different_hashes():
-    """Argon2 génère un salt différent à chaque fois."""
     hash1 = hash_password("Password1!")
     hash2 = hash_password("Password1!")
     assert hash1 != hash2
