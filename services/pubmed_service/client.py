@@ -39,7 +39,7 @@ async def _esearch(
         }
     )
     response = await client.get(_ESEARCH_URL, params=params)
-    _ = response.raise_for_status()
+    response.raise_for_status()
     raw = cast(dict[str, dict[str, list[str]]], response.json())
     pmids: list[str] = raw.get("esearchresult", {}).get("idlist", [])
     logger.info(f"ESearch returned {len(pmids)} PMIDs for query: {query!r}")
@@ -56,7 +56,7 @@ async def _efetch(client: httpx.AsyncClient, pmids: list[str]) -> list[Article]:
         }
     )
     response = await client.get(_EFETCH_URL, params=params)
-    _ = response.raise_for_status()
+    response.raise_for_status()
     return _parse_articles(response.text)
 
 
@@ -115,13 +115,11 @@ def _extract_authors(node: ET.Element) -> list[str]:
     return authors
 
 
-def _extract_date(node: ET.Element) -> str:
+def _extract_date(node: ET.Element) -> str | None:
     pub_date = node.find(".//PubDate")
     if pub_date is None:
-        return ""
-    year = pub_date.findtext("Year") or ""
-    month = pub_date.findtext("Month") or ""
-    return f"{year}-{month}" if month else year
+        return None
+    return pub_date.findtext("Year") or None
 
 
 def _extract_doi(node: ET.Element) -> str:

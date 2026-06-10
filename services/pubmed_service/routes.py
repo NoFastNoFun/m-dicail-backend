@@ -7,7 +7,7 @@ from .schemas import Article, SearchRequest
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/pubmed", tags=["PubMed"])
 
 
 @router.post("/search", response_model=list[Article])

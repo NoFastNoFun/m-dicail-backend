@@ -131,7 +131,7 @@ def test_extract_authors_empty() -> None:
 
 def test_extract_date_year_and_month() -> None:
     node = _node("<root><PubDate><Year>2023</Year><Month>Jun</Month></PubDate></root>")
-    assert _extract_date(node) == "2023-Jun"
+    assert _extract_date(node) == "2023"
 
 
 def test_extract_date_year_only() -> None:
@@ -141,7 +141,7 @@ def test_extract_date_year_only() -> None:
 
 def test_extract_date_missing() -> None:
     node = _node("<root/>")
-    assert _extract_date(node) == ""
+    assert _extract_date(node) is None
 
 
 def test_extract_doi_present() -> None:
