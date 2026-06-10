@@ -1,6 +1,5 @@
 import logging
 import xml.etree.ElementTree as ET
-from typing import cast
 
 import httpx
 
@@ -40,8 +39,8 @@ async def _esearch(
     )
     response = await client.get(_ESEARCH_URL, params=params)
     response.raise_for_status()
-    raw = cast(dict[str, dict[str, list[str]]], response.json())
-    pmids: list[str] = raw.get("esearchresult", {}).get("idlist", [])
+    data = response.json()
+    pmids: list[str] = data.get("esearchresult", {}).get("idlist", [])
     logger.info(f"ESearch returned {len(pmids)} PMIDs for query: {query!r}")
     return pmids
 
@@ -67,7 +66,7 @@ def _parse_articles(xml_text: str) -> list[Article]:
     for article_node in root.findall(".//PubmedArticle"):
         try:
             articles.append(_parse_single(article_node))
-        except Exception as exc:
+        except (KeyError, AttributeError, ET.ParseError) as exc:
             pmid = article_node.findtext(".//PMID", default="?")
             logger.warning(f"Skipping PMID {pmid}: {exc}")
 

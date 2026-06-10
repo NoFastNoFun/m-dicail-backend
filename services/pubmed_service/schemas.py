@@ -6,7 +6,7 @@ class SearchRequest(BaseModel):
         json_schema_extra={"example": {"query": "arm pain", "max_results": 3}}
     )
 
-    query: str
+    query: str = Field(min_length=1)
     max_results: int = Field(default=3, ge=1, le=50)
 
 
