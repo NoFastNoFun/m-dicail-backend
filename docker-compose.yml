@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=medicail
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-medicail}
+      - POSTGRES_DB=medicail
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medicail"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   gateway:
     build: ./apps/gateway
     ports:
@@ -12,11 +28,15 @@ services:
       - PUBMED_SERVICE_PORT=8003
       - REPORT_SERVICE_HOST=report_service
       - REPORT_SERVICE_PORT=8004
+      - AUTH_SERVICE_HOST=auth_service
+      - AUTH_SERVICE_PORT=8005
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - anonymization_service
       - ai_service
       - pubmed_service
       - report_service
+      - auth_service
 
   anonymization_service:
     build: ./services/anonymization_service
@@ -37,3 +57,17 @@ services:
     build: ./services/report_service
     expose:
       - "8004"
+
+  auth_service:
+    build: ./services/auth_service
+    expose:
+      - "8005"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://medicail:${POSTGRES_PASSWORD:-medicail}@postgres:5432/medicail
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

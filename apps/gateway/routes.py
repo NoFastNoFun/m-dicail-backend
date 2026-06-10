@@ -1,16 +1,19 @@
 import logging
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 
-from .config import AI_URL, ANONYMIZATION_URL, PUBMED_URL, REPORT_URL
+from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL, REPORT_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
+    LoginRequest,
     ProcessNoteRequest,
     ProcessNoteResponse,
     RecommendationRequest,
     RecommendationResponse,
+    RegisterRequest,
     ReportRequest,
     ReportResponse,
     SearchResponse,
@@ -19,6 +22,38 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.post("/auth/register", tags=["Auth"])
+async def register(body: RegisterRequest):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{AUTH_URL}/auth/register",
+            json=body.model_dump(),
+            headers={"Content-Type": "application/json"},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.post("/auth/login", tags=["Auth"])
+async def login(body: LoginRequest):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{AUTH_URL}/auth/login",
+            json=body.model_dump(),
+            headers={"Content-Type": "application/json"},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/auth/me", tags=["Auth"])
+async def me(request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{AUTH_URL}/auth/me",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
 
 
 @router.post("/notes/process", response_model=ProcessNoteResponse, tags=["Notes"])
