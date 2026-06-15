@@ -1,10 +1,10 @@
-import pytest
-
-from services.pubmed_service.clean_text_logic.text_utils import clean_text_for_query
+from ..clean_text_logic.text_utils import clean_text_for_query
 
 
 def test_clinical_note_basic():
-    result = clean_text_for_query("Le patient souffre d'une entorse de la cheville droite avec oedème.")
+    result = clean_text_for_query(
+        "Le patient souffre d'une entorse de la cheville droite avec oedème."
+    )
     assert result == ["patient", "souffre", "entorse", "cheville", "droite", "oedeme"]
 
 
@@ -18,9 +18,11 @@ def test_heavy_punctuation():
     assert result == ["douleur", "inflammation", "rougeur", "chaleur", "oedeme"]
 
 
+
 def test_ligature_oe():
     result = clean_text_for_query("douleur au niveau du cœur")
     assert result == ["douleur", "niveau", "coeur"]
+
 
 def test_only_stop_words():
     result = clean_text_for_query("la le la")

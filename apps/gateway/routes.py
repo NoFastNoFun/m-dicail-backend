@@ -8,11 +8,11 @@ from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
+    Article,
     LoginRequest,
     ProcessNoteRequest,
     ProcessNoteResponse,
     RegisterRequest,
-    SearchResponse,
     SummarizeNoteRequest,
     SummarizeNoteResponse,
 )
@@ -75,11 +75,11 @@ async def process_note(request: ProcessNoteRequest):
                 "max_results": 5,
             },
         )
-        pubmed_articles = (
-            SearchResponse.model_validate(pubmed_resp.json()).articles
-            if pubmed_resp.status_code == 200
-            else []
-        )
+        if pubmed_resp.status_code == 200:
+            pubmed_articles: list[Article] = [Article.model_validate(a) for a in pubmed_resp.json()]
+        else:
+            logger.warning(f"PubMed service returned {pubmed_resp.status_code}, proceeding without articles")
+            pubmed_articles = []
         pubmed_results = [a.model_dump() for a in pubmed_articles]
 
         ai_resp = await client.post(
@@ -119,4 +119,3 @@ async def summarize_note(request: SummarizeNoteRequest):
             session_id=request.session_id,
             summary=ai_resp.json().get("summary", ""),
         )
-

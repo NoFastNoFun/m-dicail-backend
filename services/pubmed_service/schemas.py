@@ -1,9 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SearchRequest(BaseModel):
-    query: str
-    max_results: int = 10
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"query": "arm pain", "max_results": 3}}
+    )
+
+    query: str = Field(min_length=1)
+    max_results: int = Field(default=3, ge=1, le=50)
 
 
 class Article(BaseModel):
@@ -11,9 +15,5 @@ class Article(BaseModel):
     title: str
     abstract: str
     authors: list[str]
-    publication_date: str
-    doi: str
-
-
-class SearchResponse(BaseModel):
-    articles: list[Article]
+    publication_date: str | None = None
+    doi: str | None = None

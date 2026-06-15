@@ -8,11 +8,10 @@ Backend monorepo for the m-dicail physiotherapist assistant.
 Flutter app
     ↓ HTTP REST
 Gateway (port 8000)
+    ├─→ auth_service           (port 8005)
     ├─→ anonymization_service  (port 8001)
     ├─→ ai_service             (port 8002)
-    ├─→ pubmed_service         (port 8003)
-    ├─→ report_service         (port 8004)
-    └─→ auth_service           (port 8005)
+    └─→ pubmed_service         (port 8003)
 ```
 
 The gateway is the only service exposed externally. It validates the JWT on every protected route and proxies requests to the appropriate internal service.
