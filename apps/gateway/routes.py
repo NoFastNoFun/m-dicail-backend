@@ -4,7 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL, REPORT_URL
+from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
@@ -12,11 +12,9 @@ from .schemas import (
     LoginRequest,
     ProcessNoteRequest,
     ProcessNoteResponse,
-    RecommendationRequest,
-    RecommendationResponse,
     RegisterRequest,
-    ReportRequest,
-    ReportResponse,
+    SummarizeNoteRequest,
+    SummarizeNoteResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,52 +102,20 @@ async def process_note(request: ProcessNoteRequest):
         )
 
 
-@router.post("/recommendations", response_model=RecommendationResponse, tags=["Recommendations"])
-async def get_recommendations(request: RecommendationRequest):
+@router.post("/notes/summarize", response_model=SummarizeNoteResponse, tags=["Notes"])
+async def summarize_note(request: SummarizeNoteRequest):
     async with httpx.AsyncClient() as client:
-        pubmed_resp = await client.post(
-            f"{PUBMED_URL}/search",
-            json={
-                "query": request.clinical_context,
-                "max_results": 5,
-            },
-        )
-        pubmed_articles: list[Article] = (
-            [Article.model_validate(a) for a in pubmed_resp.json()]
-            if pubmed_resp.status_code == 200
-            else []
-        )
-        pubmed_results = [a.model_dump() for a in pubmed_articles]
-
         ai_resp = await client.post(
-            f"{AI_URL}/generate",
+            f"{AI_URL}/summarize",
             json={
-                "anonymized_text": request.clinical_context,
-                "clinical_context": request.clinical_context,
-                "pubmed_results": pubmed_results,
+                "anonymized_text": request.anonymized_text,
                 "language": request.language,
             },
         )
         if ai_resp.status_code != 200:
             raise HTTPException(status_code=502, detail="AI service error")
-        ai_data = AIGenerateResponse.model_validate(ai_resp.json())
 
-        return RecommendationResponse(
-            session_id=request.session_id, **ai_data.model_dump()
+        return SummarizeNoteResponse(
+            session_id=request.session_id,
+            summary=ai_resp.json().get("summary", ""),
         )
-
-
-@router.post("/reports/generate", response_model=ReportResponse, tags=["Reports"])
-async def generate_report(request: ReportRequest):
-    async with httpx.AsyncClient() as client:
-        report_resp = await client.post(
-            f"{REPORT_URL}/generate",
-            json={
-                "session_id": request.session_id,
-                "content": request.content,
-                "format": request.format,
-            },
-        )
-        if report_resp.status_code != 200:
-            raise HTTPException(status_code=502, detail="Report service error")
-        return ReportResponse.model_validate(report_resp.json())

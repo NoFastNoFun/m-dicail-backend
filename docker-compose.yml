@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=medicail
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-medicail}
-      - POSTGRES_DB=medicail
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medicail"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,8 +26,6 @@ services:
       - AI_SERVICE_PORT=8002
       - PUBMED_SERVICE_HOST=pubmed_service
       - PUBMED_SERVICE_PORT=8003
-      - REPORT_SERVICE_HOST=report_service
-      - REPORT_SERVICE_PORT=8004
       - AUTH_SERVICE_HOST=auth_service
       - AUTH_SERVICE_PORT=8005
       - SECRET_KEY=${SECRET_KEY}
@@ -35,7 +33,6 @@ services:
       - anonymization_service
       - ai_service
       - pubmed_service
-      - report_service
       - auth_service
 
   anonymization_service:
@@ -53,12 +50,7 @@ services:
     expose:
       - "8003"
     environment:
-      - NCBI_API_KEY=${NCBI_API_KEY:-}
-
-  report_service:
-    build: ./services/report_service
-    expose:
-      - "8004"
+      - NCBI_API_KEY=${NCBI_API_KEY}
 
   auth_service:
     build: ./services/auth_service
@@ -66,7 +58,7 @@ services:
       - "8005"
     environment:
       - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=postgresql://medicail:${POSTGRES_PASSWORD:-medicail}@postgres:5432/medicail
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy
