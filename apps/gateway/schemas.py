@@ -18,8 +18,8 @@ class Article(BaseModel):
     title: str
     abstract: str
     authors: list[str]
-    publication_date: str
-    doi: str
+    publication_date: str | None = None
+    doi: str | None = None
 
 
 
