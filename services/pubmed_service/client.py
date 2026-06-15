@@ -60,7 +60,11 @@ async def _efetch(client: httpx.AsyncClient, pmids: list[str]) -> list[Article]:
 
 
 def _parse_articles(xml_text: str) -> list[Article]:
-    root = ET.fromstring(xml_text)
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        logger.error(f"Failed to parse NCBI XML response: {exc}")
+        return []
     articles: list[Article] = []
 
     for article_node in root.findall(".//PubmedArticle"):
@@ -121,11 +125,11 @@ def _extract_date(node: ET.Element) -> str | None:
     return pub_date.findtext("Year") or None
 
 
-def _extract_doi(node: ET.Element) -> str:
+def _extract_doi(node: ET.Element) -> str | None:
     for loc in node.findall(".//ELocationID"):
         if loc.get("EIdType") == "doi":
-            return loc.text or ""
+            return loc.text or None
     for loc in node.findall(".//ArticleId"):
         if loc.get("IdType") == "doi":
-            return loc.text or ""
-    return ""
+            return loc.text or None
+    return None

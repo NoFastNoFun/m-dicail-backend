@@ -75,11 +75,11 @@ async def process_note(request: ProcessNoteRequest):
                 "max_results": 5,
             },
         )
-        pubmed_articles: list[Article] = (
-            [Article.model_validate(a) for a in pubmed_resp.json()]
-            if pubmed_resp.status_code == 200
-            else []
-        )
+        if pubmed_resp.status_code == 200:
+            pubmed_articles: list[Article] = [Article.model_validate(a) for a in pubmed_resp.json()]
+        else:
+            logger.warning(f"PubMed service returned {pubmed_resp.status_code}, proceeding without articles")
+            pubmed_articles = []
         pubmed_results = [a.model_dump() for a in pubmed_articles]
 
         ai_resp = await client.post(
