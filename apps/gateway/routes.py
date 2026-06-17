@@ -4,12 +4,15 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PUBMED_URL
+from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PATIENT_URL, PUBMED_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
     Article,
     LoginRequest,
+    PatientCreate,
+    PatientResponse,
+    PatientUpdate,
     ProcessNoteRequest,
     ProcessNoteResponse,
     RegisterRequest,
@@ -52,6 +55,59 @@ async def me(request: Request):
             headers={"Authorization": request.headers.get("Authorization", "")},
         )
         return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/patients", tags=["Patients"], response_model=list[PatientResponse])
+async def list_patients(request: Request, query: str | None = None):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{PATIENT_URL}/patients",
+            params={"query": query} if query else {},
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.post("/patients", tags=["Patients"], response_model=PatientResponse, status_code=201)
+async def create_patient(body: PatientCreate, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{PATIENT_URL}/patients",
+            json=body.model_dump(mode="json"),
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/patients/{patient_id}", tags=["Patients"], response_model=PatientResponse)
+async def get_patient(patient_id: str, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{PATIENT_URL}/patients/{patient_id}",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.put("/patients/{patient_id}", tags=["Patients"], response_model=PatientResponse)
+async def update_patient(patient_id: str, body: PatientUpdate, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.put(
+            f"{PATIENT_URL}/patients/{patient_id}",
+            json=body.model_dump(mode="json"),
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.delete("/patients/{patient_id}", tags=["Patients"], status_code=204)
+async def delete_patient(patient_id: str, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.delete(
+            f"{PATIENT_URL}/patients/{patient_id}",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(status_code=resp.status_code)
 
 
 @router.post("/notes/process", response_model=ProcessNoteResponse, tags=["Notes"])

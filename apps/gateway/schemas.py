@@ -1,4 +1,47 @@
+from datetime import date, datetime
+from typing import Any, Literal
+
 from pydantic import BaseModel, EmailStr
+
+
+class ContactModel(BaseModel):
+    email: str | None = None
+    phone: str | None = None
+    address: str | None = None
+
+
+class PatientCreate(BaseModel):
+    model_config = {"extra": "ignore"}
+
+    mrn: str
+    first_name: str
+    last_name: str
+    birth_date: date | None = None
+    sex: Literal["M", "F", "Other"] | None = None
+    contact: ContactModel | None = None
+    notes: str | None = None
+    patient_metadata: Any | None = None
+
+
+class PatientUpdate(PatientCreate):
+    pass
+
+
+class PatientResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: str
+    user_id: int
+    mrn: str
+    first_name: str
+    last_name: str
+    birth_date: date | None
+    sex: str | None
+    contact: Any | None
+    notes: str | None
+    patient_metadata: Any | None
+    created_at: datetime
+    updated_at: datetime
 
 
 class ProcessNoteRequest(BaseModel):

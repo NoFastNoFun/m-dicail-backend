@@ -11,7 +11,8 @@ Gateway (port 8000)
     ├─→ auth_service           (port 8005)
     ├─→ anonymization_service  (port 8001)
     ├─→ ai_service             (port 8002)
-    └─→ pubmed_service         (port 8003)
+    ├─→ pubmed_service         (port 8003)
+    └─→ patient_service        (port 8006)
 ```
 
 The gateway is the only service exposed externally. It validates the JWT on every protected route and proxies requests to the appropriate internal service.
@@ -48,7 +49,25 @@ Then fill in the values in `.env` :
 
 > Never commit `.env` to git.
 
-**3. Start the services**
+**3. Set up the local Python environment** *(for IDE type-checking only — not needed to run the stack)*
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+pip install \
+  -r services/auth_service/requirements.txt \
+  -r services/auth_service/requirements-dev.txt \
+  -r services/pubmed_service/requirements.txt \
+  -r services/pubmed_service/requirements-dev.txt \
+  -r services/ai_service/requirements.txt \
+  -r services/anonymization_service/requirements.txt \
+  -r apps/gateway/requirements.txt
+```
+
+`pyrightconfig.json` points to this `.venv` — without it basedpyright reports errors on every import.
+
+**4. Start the services**
 
 ```bash
 docker compose up --build
@@ -65,8 +84,14 @@ The full API documentation (routes, request/response schemas) is available via S
 ## Run tests
 
 ```bash
+# auth_service
 cd services/auth_service
-pip install -r requirements-dev.txt
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/
+
+# patient_service
+cd services/patient_service
+pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/
 ```
 
