@@ -28,6 +28,7 @@ def upgrade():
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.UniqueConstraint("user_id", "mrn", name="uq_patient_user_mrn"),
+        sa.CheckConstraint("sex IN ('M', 'F', 'Other')", name="ck_patient_sex"),
     )
 
 

@@ -1,8 +1,5 @@
-import os
 import sys
-
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-tests-minimum-32-chars!!")
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_routes.db")
+import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 

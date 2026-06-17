@@ -1,5 +1,6 @@
 import logging
 import subprocess
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
@@ -9,9 +10,14 @@ from .routes import router
 
 logging.basicConfig(level=logging.INFO)
 
-subprocess.run(["alembic", "upgrade", "head"], cwd="/app", check=True)
 
-app = FastAPI(title="Patient Service")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    subprocess.run(["alembic", "upgrade", "head"], cwd="/srv/app", check=True)
+    yield
+
+
+app = FastAPI(title="Patient Service", lifespan=lifespan)
 app.include_router(router)
 
 if __name__ == "__main__":

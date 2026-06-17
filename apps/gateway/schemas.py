@@ -37,7 +37,7 @@ class PatientResponse(BaseModel):
     last_name: str
     birth_date: date | None
     sex: str | None
-    contact: Any | None
+    contact: ContactModel | None
     notes: str | None
     patient_metadata: Any | None
     created_at: datetime
