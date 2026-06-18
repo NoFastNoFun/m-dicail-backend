@@ -103,18 +103,6 @@ pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/
 ```
 
-## API Sessions
-
-| Méthode | Route | Description |
-|---|---|---|
-| `POST` | `/recording-sessions` | Crée une session. `201`. Backend génère l'`id`. |
-| `PUT` | `/recording-sessions/{id}` | Met à jour transcript, soap_note, summary, status. `200`/`404`. |
-| `PUT` | `/recording-sessions/{id}/patient` | Associe un patient à la session. `200`/`404`. |
-| `GET` | `/recording-sessions/{id}` | Détail d'une session. `200`/`404`. |
-| `GET` | `/patients/{id}/recording-sessions` | Historique des sessions d'un patient. `200`. |
-
-Statuts possibles : `draft`, `recording`, `completed`, `failed`.
-
 ## PubMed — sources des articles
 
 Il y a deux APIs NCBI distinctes :
