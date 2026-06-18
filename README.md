@@ -12,7 +12,8 @@ Gateway (port 8000)
     ├─→ anonymization_service  (port 8001)
     ├─→ ai_service             (port 8002)
     ├─→ pubmed_service         (port 8003)
-    └─→ patient_service        (port 8006)
+    ├─→ patient_service        (port 8006)
+    └─→ session_service        (port 8007)
 ```
 
 The gateway is the only service exposed externally. It validates the JWT on every protected route and proxies requests to the appropriate internal service.
@@ -62,6 +63,8 @@ pip install \
   -r services/pubmed_service/requirements-dev.txt \
   -r services/ai_service/requirements.txt \
   -r services/anonymization_service/requirements.txt \
+  -r services/session_service/requirements.txt \
+  -r services/session_service/requirements-dev.txt \
   -r apps/gateway/requirements.txt
 ```
 
@@ -93,7 +96,24 @@ pytest tests/
 cd services/patient_service
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/
+
+# session_service
+cd services/session_service
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/
 ```
+
+## API Sessions
+
+| Méthode | Route | Description |
+|---|---|---|
+| `POST` | `/recording-sessions` | Crée une session. `201`. Backend génère l'`id`. |
+| `PUT` | `/recording-sessions/{id}` | Met à jour transcript, soap_note, summary, status. `200`/`404`. |
+| `PUT` | `/recording-sessions/{id}/patient` | Associe un patient à la session. `200`/`404`. |
+| `GET` | `/recording-sessions/{id}` | Détail d'une session. `200`/`404`. |
+| `GET` | `/patients/{id}/recording-sessions` | Historique des sessions d'un patient. `200`. |
+
+Statuts possibles : `draft`, `recording`, `completed`, `failed`.
 
 ## PubMed — sources des articles
 
