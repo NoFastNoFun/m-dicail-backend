@@ -1,0 +1,13 @@
+{
+  "lsp": {
+    "pyright": {
+      "settings": {
+        "python": {
+          "pythonPath": "C:/Users/Arsen/Documents/Workspace/SoloProject/projet_fin_d'année/m-dicail-backend/.venv/Scripts/python.exe",
+          "venvPath": "C:/Users/Arsen/Documents/Workspace/SoloProject/projet_fin_d'année/m-dicail-backend",
+          "venv": ".venv"
+        }
+      }
+    }
+  }
+}
