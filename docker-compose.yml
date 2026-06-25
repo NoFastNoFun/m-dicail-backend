@@ -18,7 +18,7 @@ services:
   api:
     build: .
     ports:
-      - "3000:3000"
+      - "8000:8000"
     environment:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
