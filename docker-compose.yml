@@ -30,6 +30,8 @@ services:
       - AUTH_SERVICE_PORT=8005
       - PATIENT_SERVICE_HOST=patient_service
       - PATIENT_SERVICE_PORT=8006
+      - SESSION_SERVICE_HOST=session_service
+      - SESSION_SERVICE_PORT=8007
       - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - anonymization_service
@@ -37,6 +39,7 @@ services:
       - pubmed_service
       - auth_service
       - patient_service
+      - session_service
 
   anonymization_service:
     build: ./services/anonymization_service
@@ -59,6 +62,17 @@ services:
     build: ./services/auth_service
     expose:
       - "8005"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  session_service:
+    build: ./services/session_service
+    expose:
+      - "8007"
     environment:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}

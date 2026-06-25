@@ -4,7 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PATIENT_URL, PUBMED_URL
+from .config import AI_URL, ANONYMIZATION_URL, AUTH_URL, PATIENT_URL, PUBMED_URL, SESSION_URL
 from .schemas import (
     AIGenerateResponse,
     AnonymizeResponse,
@@ -16,6 +16,10 @@ from .schemas import (
     ProcessNoteRequest,
     ProcessNoteResponse,
     RegisterRequest,
+    SessionCreate,
+    SessionPatientUpdate,
+    SessionResponse,
+    SessionUpdate,
     SummarizeNoteRequest,
     SummarizeNoteResponse,
 )
@@ -52,6 +56,59 @@ async def me(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.get(
             f"{AUTH_URL}/auth/me",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.post("/recording-sessions", tags=["Sessions"], response_model=SessionResponse, status_code=201)
+async def create_session(body: SessionCreate, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{SESSION_URL}/recording-sessions",
+            json=body.model_dump(mode="json"),
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.put("/recording-sessions/{session_id}", tags=["Sessions"], response_model=SessionResponse)
+async def update_session(session_id: str, body: SessionUpdate, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.put(
+            f"{SESSION_URL}/recording-sessions/{session_id}",
+            json=body.model_dump(mode="json", exclude_unset=True),
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.put("/recording-sessions/{session_id}/patient", tags=["Sessions"], response_model=SessionResponse)
+async def associate_session_patient(session_id: str, body: SessionPatientUpdate, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.put(
+            f"{SESSION_URL}/recording-sessions/{session_id}/patient",
+            json=body.model_dump(),
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/recording-sessions/{session_id}", tags=["Sessions"], response_model=SessionResponse)
+async def get_session(session_id: str, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{SESSION_URL}/recording-sessions/{session_id}",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+
+
+@router.get("/patients/{patient_id}/recording-sessions", tags=["Sessions"], response_model=list[SessionResponse])
+async def get_sessions_by_patient(patient_id: str, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{SESSION_URL}/patients/{patient_id}/recording-sessions",
             headers={"Authorization": request.headers.get("Authorization", "")},
         )
         return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
