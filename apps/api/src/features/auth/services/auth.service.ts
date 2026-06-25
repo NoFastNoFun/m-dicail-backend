@@ -20,12 +20,12 @@ export class AuthService {
     const hashedPassword = await argon2.hash(dto.password);
     const user = await this.usersService.create(dto.email, hashedPassword, dto.fullName);
 
-    const access_token = this.jwtService.sign({
+    const accessToken = this.jwtService.sign({
       sub: String(user.id),
       email: user.email,
     });
 
-    return { access_token, token_type: 'bearer' };
+    return { accessToken, tokenType: 'bearer' };
   }
 
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
@@ -35,12 +35,12 @@ export class AuthService {
     const valid = await argon2.verify(user.hashedPassword, dto.password);
     if (!valid) throw new UnauthorizedException('Email ou mot de passe incorrect');
 
-    const access_token = this.jwtService.sign({
+    const accessToken = this.jwtService.sign({
       sub: String(user.id),
       email: user.email,
     });
 
-    return { access_token, token_type: 'bearer' };
+    return { accessToken, tokenType: 'bearer' };
   }
 
   async me(userId: string): Promise<UserResponseDto> {

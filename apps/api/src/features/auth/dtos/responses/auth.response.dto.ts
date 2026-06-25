@@ -20,5 +20,5 @@ export class RegisterResponseDto {
 
 export class LoginResponseDto {
   @ApiProperty() declare accessToken: string;
-  @ApiProperty({ default: 'bearer' }) declare tokenTtype: string;
+  @ApiProperty({ default: 'bearer' }) declare tokenType: string;
 }
