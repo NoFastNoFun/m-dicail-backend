@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, Version } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@shared/decorators/current-user.decorator';
 import { SessionsService } from './services/sessions.service';
@@ -9,6 +9,7 @@ import { SessionResponseDto } from './dtos/responses/session.response.dto';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
+@Version('1')
 @Controller()
 export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
