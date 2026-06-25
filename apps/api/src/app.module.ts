@@ -9,6 +9,7 @@ import { UsersModule } from './features/users/users.module';
 import { PatientsModule } from './features/patients/patients.module';
 import { SessionsModule } from './features/sessions/sessions.module';
 import { PubmedModule } from './features/pubmed/pubmed.module';
+import { NotesModule } from './features/notes/notes.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PubmedModule } from './features/pubmed/pubmed.module';
     PatientsModule,
     SessionsModule,
     PubmedModule,
+    NotesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
