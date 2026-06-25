@@ -1,7 +1,12 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, validateSync } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
 
 class EnvironmentVariables {
+  @IsInt()
+  @Min(1)
+  @Max(65000)
+  declare PORT: number;
+
   @IsString()
   @IsNotEmpty()
   declare SECRET_KEY: string;
