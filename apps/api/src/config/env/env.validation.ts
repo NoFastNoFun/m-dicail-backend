@@ -19,9 +19,6 @@ class EnvironmentVariables {
   @IsOptional()
   declare NCBI_API_KEY?: string;
 
-  @IsString()
-  @IsOptional()
-  declare CORS_ORIGINS?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

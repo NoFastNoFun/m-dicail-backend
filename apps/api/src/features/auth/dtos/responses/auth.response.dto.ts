@@ -14,7 +14,6 @@ export class UserResponseDto {
 }
 
 export class RegisterResponseDto {
-  @ApiProperty() declare user: UserResponseDto;
   @ApiProperty() declare access_token: string;
   @ApiProperty({ default: 'bearer' }) declare token_type: string;
 }

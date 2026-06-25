@@ -16,7 +16,10 @@ services:
       retries: 5
 
   api:
-    build: .
+    build:
+      context: .
+      args:
+        APP: api
     ports:
       - "8000:8000"
     environment:
@@ -24,6 +27,20 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NCBI_API_KEY=${NCBI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai:
+    build:
+      context: .
+      args:
+        APP: ai
+    ports:
+      - "8001:8001"
+    environment:
+      - AI_PORT=${AI_PORT}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       postgres:
         condition: service_healthy

@@ -4,20 +4,21 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "nest build",
-    "start": "node dist/main",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "build": "nest build api && nest build ai",
+    "build:api": "nest build api",
+    "build:ai": "nest build ai",
+    "start:dev:api": "nest start api --watch",
+    "start:dev:ai": "nest start ai --watch",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "format:check": "prettier --check \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "lint": "eslint \"{apps,libs,test}/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts"
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d apps/api/src/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d apps/api/src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d apps/api/src/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
@@ -63,17 +64,28 @@
     "prettier": "^3.4.0"
   },
   "jest": {
-    "moduleFileExtensions": ["js", "json", "ts"],
-    "rootDir": "src",
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
-    "transform": { "^.+\\.(t|j)s$": "ts-jest" },
-    "collectCoverageFrom": ["**/*.(t|j)s"],
-    "coverageDirectory": "../coverage",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@features/(.*)$": "<rootDir>/features/$1",
       "^@shared/(.*)$": "<rootDir>/shared/$1",
       "^@config/(.*)$": "<rootDir>/config/$1"
-    }
+    },
+    "roots": [
+      "<rootDir>/apps/"
+    ]
   }
 }

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '@shared/decorators/current-user.decorator';
+import { CurrentUser } from '@app/shared';
 import { SessionsService } from './services/sessions.service';
 import { SessionCreateRequestDto } from './dtos/requests/session-create.request.dto';
 import { SessionUpdateRequestDto } from './dtos/requests/session-update.request.dto';

@@ -25,7 +25,7 @@ export class AuthService {
       email: user.email,
     });
 
-    return { user: new UserResponseDto(user), access_token, token_type: 'bearer' };
+    return { access_token, token_type: 'bearer' };
   }
 
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {

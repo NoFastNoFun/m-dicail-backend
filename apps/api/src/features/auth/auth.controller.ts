@@ -1,7 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Public } from '@shared/decorators/public.decorator';
-import { CurrentUser } from '@shared/decorators/current-user.decorator';
+import { Public, CurrentUser } from '@app/shared';
 import { AuthService } from './services/auth.service';
 import { RegisterRequestDto } from './dtos/requests/register.request.dto';
 import { LoginRequestDto } from './dtos/requests/login.request.dto';
