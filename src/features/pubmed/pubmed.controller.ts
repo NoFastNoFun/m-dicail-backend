@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Version } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PubmedService } from './services/pubmed.service';
 import { PubmedSearchRequestDto } from './dtos/requests/pubmed-search.request.dto';
@@ -6,8 +6,7 @@ import { ArticleResponseDto } from './dtos/responses/article.response.dto';
 
 @ApiTags('pubmed')
 @ApiBearerAuth()
-@Version('1')
-@Controller('pubmed')
+@Controller({ path: 'pubmed', version: '1' })
 export class PubmedController {
   constructor(private readonly pubmedService: PubmedService) {}
 
