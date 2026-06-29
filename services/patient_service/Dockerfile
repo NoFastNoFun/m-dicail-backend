@@ -1,12 +1,12 @@
 FROM python:3.11-slim
 
-WORKDIR /
+WORKDIR /srv
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app/
+COPY . ./app/
 
-EXPOSE 8004
+EXPOSE 8006
 
 CMD ["python", "-m", "app.main"]

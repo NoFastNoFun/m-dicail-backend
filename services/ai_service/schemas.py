@@ -15,3 +15,12 @@ class GenerateResponse(BaseModel):
     evidence_level: str
     sources: list[str]
     precautions: list[str]
+
+
+class SummarizeRequest(BaseModel):
+    anonymized_text: str
+    language: str = "fr"
+
+
+class SummarizeResponse(BaseModel):
+    summary: str
