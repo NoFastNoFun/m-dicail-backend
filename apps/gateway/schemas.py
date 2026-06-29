@@ -149,3 +149,23 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str    
+
+
+class CreatePatientAccountRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str | None = None
+    patient_id: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    full_name: str | None
+    role: str
+    patient_id: str | None = None
+
+
+class RegisterResponse(BaseModel):
+    user: UserResponse
+    access_token: str
+    token_type: str = "bearer"

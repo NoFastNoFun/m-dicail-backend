@@ -25,3 +25,11 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         raise credentials_exception
     return int(user_id)
+
+
+def get_current_user_role(token: str = Depends(oauth2_scheme)) -> str:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("role", "PRATICIEN")
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise credentials_exception

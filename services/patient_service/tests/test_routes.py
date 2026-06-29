@@ -10,8 +10,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
+from app.models import Patient
 from app.routes import router
-from app.auth import get_current_user_id
+from app.auth import get_current_user_id, get_current_user_role
 
 TEST_DATABASE_URL = "sqlite:///./test_routes.db"
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -30,6 +31,7 @@ app = FastAPI(title="Patient Service Test")
 app.include_router(router)
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_current_user_id] = lambda: 1
+app.dependency_overrides[get_current_user_role] = lambda: "PRATICIEN"  # ← override role
 
 Base.metadata.create_all(bind=engine)
 
@@ -160,10 +162,23 @@ def test_deleted_patient_not_found_on_get():
 
 def test_user_isolation():
     client.post("/patients", json=PATIENT_PAYLOAD)
-
     app.dependency_overrides[get_current_user_id] = lambda: 2
     response = client.get("/patients")
     app.dependency_overrides[get_current_user_id] = lambda: 1
-
     assert response.status_code == 200
     assert response.json() == []
+
+
+# --- Tests role ---
+
+def test_patient_role_cannot_create_patient():
+    app.dependency_overrides[get_current_user_role] = lambda: "PATIENT"
+    response = client.post("/patients", json=PATIENT_PAYLOAD)
+    app.dependency_overrides[get_current_user_role] = lambda: "PRATICIEN"
+    assert response.status_code == 403
+
+
+def test_praticien_role_can_create_patient():
+    app.dependency_overrides[get_current_user_role] = lambda: "PRATICIEN"
+    response = client.post("/patients", json=PATIENT_PAYLOAD)
+    assert response.status_code == 201

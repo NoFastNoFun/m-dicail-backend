@@ -76,7 +76,60 @@ pip install \
 docker compose up --build
 ```
 
-All services start automatically. Database migrations run on `auth_service` startup.
+All services start automatically. Database migrations run on service startup.
+
+## User roles
+
+The application uses a role-based access system with two roles:
+
+| Role | Description |
+|---|---|
+| `PRATICIEN` | Healthcare professional — registers via `POST /auth/register`. Can create patients and access all their data. |
+| `PATIENT` | Patient — account created by a PRATICIEN via `POST /auth/patients`. Linked to a single practitioner. Has access to their own data only. |
+
+### Role flow
+
+```
+PRATICIEN
+  POST /auth/register          → creates PRATICIEN account → returns JWT
+  POST /patients               → creates patient record (patient_service)
+  POST /auth/patients          → creates patient app account linked to patient record
+  GET  /patients               → lists their own patients only
+
+PATIENT
+  POST /auth/login             → same login route as PRATICIEN
+  GET  /patients/{id}          → own record only
+```
+
+### JWT payload
+
+The JWT token includes the user role:
+
+```json
+{
+  "sub": "3",
+  "email": "praticien@example.com",
+  "role": "PRATICIEN",
+  "exp": 1782851959
+}
+```
+
+### Security
+
+- Passwords: minimum 8 characters, requires uppercase, lowercase, digit, and special character
+- Rate limiting: 5 req/min on `/auth/register`, 10 req/min on `/auth/login`
+- RGPD: only user `id` is written to logs — never email or personal data
+- `SECRET_KEY` is required at startup — service raises `RuntimeError` if not set
+- Database: PostgreSQL 15 (not SQLite)
+
+## Auth migrations
+
+Managed with **Alembic** — one file per domain:
+
+| File | Description |
+|---|---|
+| `001_auth.py` | Creates `users` table |
+| `002_add_role_to_users.py` | Adds `role` (PRATICIEN/PATIENT) and `patient_id` columns |
 
 ## API
 
@@ -84,13 +137,42 @@ The full API documentation (routes, request/response schemas) is available via S
 
 **http://localhost:8000/docs**
 
+### Auth endpoints
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/auth/register` | ❌ | Create PRATICIEN account → returns JWT |
+| POST | `/auth/login` | ❌ | Login (PRATICIEN or PATIENT) → returns JWT |
+| GET | `/auth/me` | ✅ | Get current user profile |
+| POST | `/auth/patients` | ✅ PRATICIEN only | Create patient app account |
+
+### Patient endpoints
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/patients` | ✅ | List patients (PRATICIEN sees their own only) |
+| POST | `/patients` | ✅ PRATICIEN only | Create patient record |
+| GET | `/patients/{id}` | ✅ | Get patient by ID |
+| PUT | `/patients/{id}` | ✅ | Update patient |
+| DELETE | `/patients/{id}` | ✅ | Delete patient |
+
+### Session endpoints
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/recording-sessions` | ✅ | Create recording session |
+| PUT | `/recording-sessions/{id}` | ✅ | Update session |
+| GET | `/recording-sessions/{id}` | ✅ | Get session |
+| PUT | `/recording-sessions/{id}/patient` | ✅ | Associate session to patient |
+| GET | `/patients/{id}/recording-sessions` | ✅ | Get sessions by patient |
+
 ## Run tests
 
 ```bash
-# auth_service
+# auth_service — includes role tests
 cd services/auth_service
 pip install -r requirements.txt -r requirements-dev.txt
-pytest tests/
+pytest tests/ -v
 
 # patient_service
 cd services/patient_service
@@ -102,6 +184,16 @@ cd services/session_service
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/
 ```
+
+### auth_service test coverage
+
+| File | Tests | Covers |
+|---|---|---|
+| `test_auth.py` | 6 | `hash_password` / `verify_password` |
+| `test_jwt.py` | 6 | `create_access_token` |
+| `test_schemas.py` | 9 | Password validation (Pydantic) |
+| `test_routes.py` | 9 | Register / login / me endpoints |
+| `test_roles.py` | 6 | Role system — PRATICIEN/PATIENT |
 
 ## PubMed — sources des articles
 

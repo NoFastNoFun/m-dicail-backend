@@ -4,12 +4,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 try:
-    from .auth import get_current_user_id
+    from .auth import get_current_user_id, get_current_user_role
     from .database import get_db
     from .models import Patient
     from .schemas import PatientCreate, PatientResponse, PatientUpdate
 except ImportError:
-    from auth import get_current_user_id
+    from auth import get_current_user_id, get_current_user_role
     from database import get_db
     from models import Patient
     from schemas import PatientCreate, PatientResponse, PatientUpdate
@@ -40,8 +40,15 @@ def list_patients(
 def create_patient(
     body: PatientCreate,
     user_id: int = Depends(get_current_user_id),
+    role: str = Depends(get_current_user_role),
     db: Session = Depends(get_db),
 ):
+    if role != "PRATICIEN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seul un praticien peut créer un patient",
+        )
+
     patient = Patient(
         user_id=user_id,
         **body.model_dump(),

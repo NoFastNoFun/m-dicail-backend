@@ -1,6 +1,11 @@
 import re
-
 from pydantic import BaseModel, EmailStr, field_validator
+from enum import Enum
+
+
+class UserRole(str, Enum):
+    PRATICIEN = "PRATICIEN"
+    PATIENT = "PATIENT"
 
 
 class RegisterRequest(BaseModel):
@@ -24,6 +29,14 @@ class RegisterRequest(BaseModel):
         return v
 
 
+class CreatePatientAccountRequest(BaseModel):
+    """Créé par un PRATICIEN pour donner accès app à un patient existant"""
+    email: EmailStr
+    password: str
+    full_name: str | None = None
+    patient_id: str 
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -38,6 +51,8 @@ class UserResponse(BaseModel):
     id: int
     email: str
     full_name: str | None
+    role: UserRole
+    patient_id: str | None = None
 
     model_config = {"from_attributes": True}
 

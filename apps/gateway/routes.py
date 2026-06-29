@@ -22,6 +22,7 @@ from .schemas import (
     SessionUpdate,
     SummarizeNoteRequest,
     SummarizeNoteResponse,
+    CreatePatientAccountRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -232,3 +233,16 @@ async def summarize_note(request: SummarizeNoteRequest):
             session_id=request.session_id,
             summary=ai_resp.json().get("summary", ""),
         )
+    
+@router.post("/auth/patients", tags=["Auth"])
+async def create_patient_account(body: CreatePatientAccountRequest, request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{AUTH_URL}/auth/patients",
+            json=body.model_dump(),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": request.headers.get("Authorization", ""),
+            },
+        )
+        return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
