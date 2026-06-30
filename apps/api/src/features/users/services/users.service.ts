@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User } from '../entities/user.entity';
+import { User, UserRole } from '../entities/user.entity';
 import { UserRepository } from '../repositories/user.repository';
 
 @Injectable()
@@ -15,6 +15,26 @@ export class UsersService {
   }
 
   create(email: string, hashedPassword: string, fullName?: string): Promise<User> {
-    return this.userRepository.save({ email, hashedPassword, fullName: fullName ?? null });
+    return this.userRepository.save({
+      email,
+      hashedPassword,
+      fullName: fullName ?? null,
+      role: UserRole.PRATICIEN,
+    });
+  }
+
+  createPatientAccount(
+    email: string,
+    hashedPassword: string,
+    patientId: string,
+    fullName?: string,
+  ): Promise<User> {
+    return this.userRepository.save({
+      email,
+      hashedPassword,
+      fullName: fullName ?? null,
+      role: UserRole.PATIENT,
+      patientId,
+    });
   }
 }
