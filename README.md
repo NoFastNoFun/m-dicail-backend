@@ -6,22 +6,19 @@ Backend monorepo for the m-dicail physiotherapist assistant.
 
 ```
 Flutter app
-    ↓ HTTP REST
-Gateway (port 8000)
-    ├─→ auth_service           (port 8005)
-    ├─→ anonymization_service  (port 8001)
-    ├─→ ai_service             (port 8002)
-    ├─→ pubmed_service         (port 8003)
-    ├─→ patient_service        (port 8006)
-    └─→ session_service        (port 8007)
+    ↓ HTTPS
+nginx (ports 80 → 443 redirect, 443)
+    ├─ /api  → api  (port 8000)
+    └─ /ai   → ai   (port 8001)
 ```
 
-The gateway is the only service exposed externally. It validates the JWT on every protected route and proxies requests to the appropriate internal service.
+Both NestJS apps use the `/api` global prefix internally. nginx rewrites `/ai/*` to `/api/*` on the AI service.
 
 ## Prerequisites
 
 - Docker
 - Docker Compose
+- OpenSSL *(for generating local TLS certificates)*
 
 ## Setup
 
@@ -70,19 +67,41 @@ pip install \
 
 `pyrightconfig.json` points to this `.venv` — without it basedpyright reports errors on every import.
 
-**4. Start the services**
+**4. Generate TLS certificates** *(self-signed for local dev)*
+
+```bash
+# Git Bash / Linux / macOS
+sh scripts/generate-ssl-certs.sh
+
+# Windows PowerShell (if OpenSSL is not installed locally)
+docker run --rm -v "${PWD}/nginx/certs:/certs" alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /certs/privkey.pem -out /certs/fullchain.pem -subj "/CN=localhost"
+```
+
+For production, replace `nginx/certs/fullchain.pem` and `nginx/certs/privkey.pem` with real certificates (e.g. Let's Encrypt).
+
+**5. Start the services**
 
 ```bash
 docker compose up --build
 ```
 
-All services start automatically. Database migrations run on `auth_service` startup.
+All services start automatically. Database migrations run on `api` startup.
 
 ## API
 
-The full API documentation (routes, request/response schemas) is available via Swagger once the stack is running:
+The stack is exposed through nginx:
 
-**http://localhost:8000/docs**
+| Path | Service | Example |
+|---|---|---|
+| `/api` | Main API (port 8000) | `https://localhost/api/v1/auth/login` |
+| `/ai` | AI service (port 8001) | `https://localhost/ai/v1/...` |
+
+HTTP on port 80 redirects to HTTPS on port 443.
+
+Swagger:
+
+- API: **https://localhost/docs**
+- AI: **https://localhost/ai/docs**
 
 ## Run tests
 
