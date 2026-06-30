@@ -15,78 +15,32 @@ services:
       timeout: 5s
       retries: 5
 
-  gateway:
-    build: ./apps/gateway
+  api:
+    build:
+      context: .
+      args:
+        APP: api
     ports:
       - "8000:8000"
     environment:
-      - ANONYMIZATION_SERVICE_HOST=anonymization_service
-      - ANONYMIZATION_SERVICE_PORT=8001
-      - AI_SERVICE_HOST=ai_service
-      - AI_SERVICE_PORT=8002
-      - PUBMED_SERVICE_HOST=pubmed_service
-      - PUBMED_SERVICE_PORT=8003
-      - AUTH_SERVICE_HOST=auth_service
-      - AUTH_SERVICE_PORT=8005
-      - PATIENT_SERVICE_HOST=patient_service
-      - PATIENT_SERVICE_PORT=8006
-      - SESSION_SERVICE_HOST=session_service
-      - SESSION_SERVICE_PORT=8007
+      - PORT=${PORT}
       - SECRET_KEY=${SECRET_KEY}
-    depends_on:
-      - anonymization_service
-      - ai_service
-      - pubmed_service
-      - auth_service
-      - patient_service
-      - session_service
-
-  anonymization_service:
-    build: ./services/anonymization_service
-    expose:
-      - "8001"
-
-  ai_service:
-    build: ./services/ai_service
-    expose:
-      - "8002"
-
-  pubmed_service:
-    build: ./services/pubmed_service
-    expose:
-      - "8003"
-    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NCBI_API_KEY=${NCBI_API_KEY}
-
-  auth_service:
-    build: ./services/auth_service
-    expose:
-      - "8005"
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy
 
-  session_service:
-    build: ./services/session_service
-    expose:
-      - "8007"
+  ai:
+    build:
+      context: .
+      args:
+        APP: ai
+    ports:
+      - "8001:8001"
     environment:
+      - AI_PORT=${AI_PORT}
       - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  patient_service:
-    build: ./services/patient_service
-    expose:
-      - "8006"
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy
