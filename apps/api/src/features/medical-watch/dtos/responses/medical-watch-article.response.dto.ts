@@ -1,8 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { MedicalWatchSpecialty } from '../../enums/medical-watch-specialty.enum';
 
 export class MedicalWatchArticleResponseDto {
   @ApiProperty()
   declare pmid: string;
+
+  @ApiProperty({ enum: MedicalWatchSpecialty })
+  declare specialty: MedicalWatchSpecialty;
 
   @ApiProperty()
   declare title: string;

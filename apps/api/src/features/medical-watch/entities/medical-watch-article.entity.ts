@@ -1,9 +1,13 @@
 import { Column, CreateDateColumn, Entity, PrimaryColumn } from 'typeorm';
+import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
 
 @Entity('medical_watch_articles')
 export class MedicalWatchArticle {
   @PrimaryColumn({ name: 'pmid', type: 'varchar' })
   declare pmid: string;
+
+  @Column({ name: 'specialty', type: 'varchar' })
+  declare specialty: MedicalWatchSpecialty;
 
   @Column({ name: 'title', type: 'text' })
   declare title: string;
