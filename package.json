@@ -85,7 +85,11 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/api/src/features/**/services/**/*.ts",
+      "apps/api/src/features/**/*.controller.ts",
+      "apps/api/src/features/**/exceptions/**/*.ts",
+      "libs/shared/src/filters/**/*.ts",
+      "libs/shared/src/guards/**/*.ts"
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
@@ -104,7 +108,8 @@
       }
     },
     "roots": [
-      "<rootDir>/apps/"
+      "<rootDir>/apps/",
+      "<rootDir>/libs/"
     ]
   }
 }
