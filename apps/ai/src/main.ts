@@ -20,7 +20,12 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  const config = new DocumentBuilder().setTitle('m-dicail AI API').setDescription('Service IA — recherche intelligente PubMed + suggestions').setVersion('1.0').addBearerAuth().build();
+  const config = new DocumentBuilder()
+    .setTitle('m-dicail AI API')
+    .setDescription('Service IA — recherche intelligente PubMed + suggestions')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 

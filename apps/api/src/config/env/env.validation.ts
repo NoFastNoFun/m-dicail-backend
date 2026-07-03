@@ -18,7 +18,6 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   declare NCBI_API_KEY?: string;
-
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
