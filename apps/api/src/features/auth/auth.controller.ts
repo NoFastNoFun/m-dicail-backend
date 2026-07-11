@@ -1,12 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Public, CurrentUser, Roles, RolesGuard } from '@app/shared';
-import { UserRole } from '@features/users/entities/user.entity';
+import { Public, CurrentUser, Roles, RolesGuard, UserRole } from '@app/shared';
 import { AuthService } from './services/auth.service';
 import { RegisterRequestDto } from './dtos/requests/register.request.dto';
 import { LoginRequestDto } from './dtos/requests/login.request.dto';
 import { CreatePatientAccountRequestDto } from './dtos/requests/create-patient-account.request.dto';
-import { LoginResponseDto, RegisterResponseDto, UserResponseDto } from './dtos/responses/auth.response.dto';
+import { LoginResponseDto, RegisterResponseDto, UserResponseDto, CreatePatientResponseDto } from './dtos/responses/auth.response.dto';
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
@@ -36,7 +35,7 @@ export class AuthController {
   @Roles(UserRole.PRATICIEN)
   @UseGuards(RolesGuard)
   @Post('patients')
-  createPatientAccount(@Body() dto: CreatePatientAccountRequestDto): Promise<RegisterResponseDto> {
+  createPatientAccount(@Body() dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
     return this.authService.createPatientAccount(dto);
   }
 }

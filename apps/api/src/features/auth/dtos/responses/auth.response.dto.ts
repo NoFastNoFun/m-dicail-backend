@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User, UserRole } from '@features/users/entities/user.entity';
+import { UserRole } from '@app/shared';
+import { User } from '@features/users/entities/user.entity';
 
 export class UserResponseDto {
   @ApiProperty() declare id: string;
@@ -24,6 +25,11 @@ export class RegisterResponseDto {
 }
 
 export class LoginResponseDto {
+  @ApiProperty({ type: UserResponseDto }) declare user: UserResponseDto;
   @ApiProperty() declare accessToken: string;
   @ApiProperty({ default: 'bearer' }) declare tokenType: string;
+}
+
+export class CreatePatientResponseDto {
+  @ApiProperty({ type: UserResponseDto }) declare user: UserResponseDto;
 }

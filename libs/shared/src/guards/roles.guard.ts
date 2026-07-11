@@ -1,11 +1,8 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '@features/users/entities/user.entity';
+import { UserRole } from '../enums/user-role.enum';
+import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-
-interface RequestUser {
-  role: UserRole;
-}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -18,7 +15,10 @@ export class RolesGuard implements CanActivate {
     ]);
     if (!requiredRoles || requiredRoles.length === 0) return true;
 
-    const { user } = context.switchToHttp().getRequest<{ user: RequestUser }>();
+    const { user } = context.switchToHttp().getRequest<{ user: AuthenticatedUser }>();
+
+    if (!user) throw new ForbiddenException('Utilisateur non authentifié');
+
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException('Rôle insuffisant pour cette action');
     }

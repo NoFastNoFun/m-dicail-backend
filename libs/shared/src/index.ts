@@ -4,3 +4,5 @@ export * from './filters/http-exception.filter';
 export * from './guards/jwt-auth.guard';
 export * from './decorators/roles.decorator';
 export * from './guards/roles.guard';
+export * from './enums/user-role.enum';
+export * from './interfaces/authenticated-user.interface';

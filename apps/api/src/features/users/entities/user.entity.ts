@@ -1,9 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-
-export enum UserRole {
-  PRATICIEN = 'PRATICIEN',
-  PATIENT = 'PATIENT',
-}
+import { UserRole } from '@app/shared';
 
 @Entity('users')
 export class User {
