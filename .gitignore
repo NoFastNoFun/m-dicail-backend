@@ -24,3 +24,5 @@ Thumbs.db
 *.db
 
 docs/
+
+nginx/certs/*.pem
