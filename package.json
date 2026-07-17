@@ -16,7 +16,7 @@
     "typecheck": "tsc -p apps/api/tsconfig.app.json --noEmit && tsc -p apps/ai/tsconfig.app.json --noEmit && tsc -p libs/shared/tsconfig.lib.json --noEmit",
     "dead-code": "knip",
     "pre-check": "pnpm run format && pnpm run lint:code && pnpm run typecheck && pnpm run dead-code && pnpm run test:coverage",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
