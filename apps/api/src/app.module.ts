@@ -10,12 +10,14 @@ import { PatientsModule } from './features/patients/patients.module';
 import { SessionsModule } from './features/sessions/sessions.module';
 import { PubmedModule } from './features/pubmed/pubmed.module';
 import { NotesModule } from './features/notes/notes.module';
+import { HealthModule } from './features/health/health.module';
 
 @Module({
   imports: [
     AppConfigModule,
     DatabaseModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    HealthModule,
     UsersModule,
     AuthModule,
     PatientsModule,
