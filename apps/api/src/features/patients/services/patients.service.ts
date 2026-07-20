@@ -54,16 +54,14 @@ export class PatientsService {
     });
     return new PatientResponseDto(updated);
   }
-  
+
   async findById(id: string): Promise<PatientResponseDto | null> {
-  const patient = await this.patientRepository.findById(id);
-  return patient ? new PatientResponseDto(patient) : null;
-}
+    const patient = await this.patientRepository.findById(id);
+    return patient ? new PatientResponseDto(patient) : null;
+  }
 
   async delete(userId: string, id: string): Promise<void> {
     const deleted = await this.patientRepository.deleteForUser(userId, id);
     if (!deleted) throw new PatientNotFoundException(id);
   }
 }
-
-

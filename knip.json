@@ -8,7 +8,6 @@
   ],
   "project": ["apps/**/*.ts", "libs/**/*.ts"],
   "ignoreDependencies": [
-    "@nestjs/testing",
     "source-map-support",
     "ts-loader",
     "tsconfig-paths"

@@ -24,12 +24,7 @@ export class UsersService {
     });
   }
 
-  createPatientAccount(
-    email: string,
-    hashedPassword: string,
-    patientId: string,
-    fullName?: string,
-  ): Promise<User> {
+  createPatientAccount(email: string, hashedPassword: string, patientId: string, fullName?: string): Promise<User> {
     return this.userRepository.save({
       email,
       hashedPassword,

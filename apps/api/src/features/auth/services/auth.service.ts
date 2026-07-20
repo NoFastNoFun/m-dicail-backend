@@ -1,18 +1,12 @@
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
-import { UserRole } from '@app/shared';
 import { UsersService } from '@features/users/services/users.service';
 import { PatientsService } from '@features/patients/services/patients.service';
 import { RegisterRequestDto } from '../dtos/requests/register.request.dto';
 import { LoginRequestDto } from '../dtos/requests/login.request.dto';
 import { CreatePatientAccountRequestDto } from '../dtos/requests/create-patient-account.request.dto';
-import {
-  CreatePatientResponseDto,
-  LoginResponseDto,
-  RegisterResponseDto,
-  UserResponseDto,
-} from '../dtos/responses/auth.response.dto';
+import { CreatePatientResponseDto, LoginResponseDto, RegisterResponseDto, UserResponseDto } from '../dtos/responses/auth.response.dto';
 
 @Injectable()
 export class AuthService {
@@ -39,7 +33,6 @@ export class AuthService {
   }
 
   async createPatientAccount(dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
-    
     const patientExists = await this.patientsService.findById(dto.patientId);
     if (!patientExists) throw new NotFoundException(`Patient ${dto.patientId} introuvable`);
 
@@ -47,14 +40,8 @@ export class AuthService {
     if (existing) throw new ConflictException('Email déjà utilisé');
 
     const hashedPassword = await argon2.hash(dto.password);
-    const user = await this.usersService.createPatientAccount(
-      dto.email,
-      hashedPassword,
-      dto.patientId,
-      dto.fullName,
-    );
+    const user = await this.usersService.createPatientAccount(dto.email, hashedPassword, dto.patientId, dto.fullName);
 
-  
     return { user: new UserResponseDto(user) };
   }
 

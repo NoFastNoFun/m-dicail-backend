@@ -29,8 +29,8 @@ export class PatientRepository {
   }
 
   findById(id: string): Promise<Patient | null> {
-  return this.repo.findOne({ where: { id } });
-}
+    return this.repo.findOne({ where: { id } });
+  }
 
   async deleteForUser(userId: string, id: string): Promise<boolean> {
     const result = await this.repo.delete({ id, userId });
