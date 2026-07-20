@@ -18,7 +18,7 @@ Both NestJS apps use the `/api` global prefix internally. nginx rewrites `/ai/*`
 
 - Docker
 - Docker Compose
-- OpenSSL (for generating local TLS certificates)
+- OpenSSL *(for generating local TLS certificates)*
 
 ## Setup
 
@@ -29,8 +29,25 @@ git clone <repo-url>
 cd m-dicail-backend
 ```
 
+**2. Create your `.env` file**
 
-**2. Generate TLS certificates** *(self-signed for local dev)*
+```bash
+cp .env.example .env
+```
+
+Then fill in the values in `.env` :
+
+| Variable | Description |
+|---|---|
+| `SECRET_KEY` | JWT signing key — generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `POSTGRES_USER` | PostgreSQL username |
+| `POSTGRES_PASSWORD` | PostgreSQL password |
+| `POSTGRES_DB` | PostgreSQL database name |
+| `NCBI_API_KEY` | *(optional)* PubMed API key — without it rate limit is 3 req/s instead of 10. Get one at https://www.ncbi.nlm.nih.gov/account/ |
+
+> Never commit `.env` to git.
+
+**3. Generate TLS certificates** *(self-signed for local dev)*
 
 ```bash
 # Git Bash / Linux / macOS
@@ -42,7 +59,7 @@ docker run --rm -v "${PWD}/nginx/certs:/certs" alpine/openssl req -x509 -nodes -
 
 For production, replace `nginx/certs/fullchain.pem` and `nginx/certs/privkey.pem` with real certificates (e.g. Let's Encrypt).
 
-**3. Start the services**
+**4. Start the services**
 
 ```bash
 docker compose up --build
@@ -50,7 +67,7 @@ docker compose up --build
 
 All services start automatically. Database migrations run on `api` startup.
 
-**4. Run database migrations** *(if not auto-applied on first boot)*
+**5. Run database migrations** *(if not auto-applied on first boot)*
 
 ```bash
 pnpm run typeorm migration:run -- -d apps/api/src/data-source.ts
@@ -175,8 +192,6 @@ Swagger:
 | GET | `/api/v1/recording-sessions/{id}` | ✅ | Get session |
 | PUT | `/api/v1/recording-sessions/{id}/patient` | ✅ | Associate session to patient |
 | GET | `/api/v1/patients/{id}/recording-sessions` | ✅ | Get sessions by patient |
-
-
 
 ## PubMed — sources des articles
 
