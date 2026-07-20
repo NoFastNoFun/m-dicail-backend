@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "apps/api/src/main.ts",
+    "apps/ai/src/main.ts",
+    "apps/api/src/data-source.ts",
+    "apps/api/src/migrations/index.ts"
+  ],
+  "project": ["apps/**/*.ts", "libs/**/*.ts"],
+  "ignoreDependencies": [
+    "@nestjs/testing",
+    "source-map-support",
+    "ts-loader",
+    "tsconfig-paths"
+  ]
+}
