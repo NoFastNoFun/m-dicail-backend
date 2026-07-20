@@ -13,10 +13,7 @@ export class MedicalWatchController {
   @Get()
   @ApiQuery({ name: 'specialty', required: false, enum: MedicalWatchSpecialty })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  getArticles(
-    @Query('specialty') specialty?: MedicalWatchSpecialty,
-    @Query('limit') limit?: number,
-  ): Promise<MedicalWatchArticleResponseDto[]> {
+  getArticles(@Query('specialty') specialty?: MedicalWatchSpecialty, @Query('limit') limit?: number): Promise<MedicalWatchArticleResponseDto[]> {
     return this.medicalWatchService.getArticles(specialty, limit);
   }
 
