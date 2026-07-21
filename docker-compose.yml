@@ -27,6 +27,8 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NCBI_API_KEY=${NCBI_API_KEY}
+      - ACCESS_TOKEN_TTL=${ACCESS_TOKEN_TTL:-1h}
+      - REFRESH_TOKEN_TTL_DAYS=${REFRESH_TOKEN_TTL_DAYS:-7}
     depends_on:
       postgres:
         condition: service_healthy

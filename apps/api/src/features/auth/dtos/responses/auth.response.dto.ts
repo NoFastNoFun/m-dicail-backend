@@ -18,15 +18,10 @@ export class UserResponseDto {
   }
 }
 
-export class RegisterResponseDto {
+export class AuthResponseDto {
   @ApiProperty({ type: UserResponseDto }) declare user: UserResponseDto;
   @ApiProperty() declare accessToken: string;
-  @ApiProperty({ default: 'bearer' }) declare tokenType: string;
-}
-
-export class LoginResponseDto {
-  @ApiProperty({ type: UserResponseDto }) declare user: UserResponseDto;
-  @ApiProperty() declare accessToken: string;
+  @ApiProperty() declare refreshToken: string;
   @ApiProperty({ default: 'bearer' }) declare tokenType: string;
 }
 
