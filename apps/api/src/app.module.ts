@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '@app/shared';
 import { AuthModule } from './features/auth/auth.module';
 import { UsersModule } from './features/users/users.module';
 import { PatientsModule } from './features/patients/patients.module';
+import { AppointmentsModule } from './features/appointments/appointments.module';
 import { SessionsModule } from './features/sessions/sessions.module';
 import { PubmedModule } from './features/pubmed/pubmed.module';
 import { NotesModule } from './features/notes/notes.module';
@@ -21,6 +22,7 @@ import { HealthModule } from './features/health/health.module';
     UsersModule,
     AuthModule,
     PatientsModule,
+    AppointmentsModule,
     SessionsModule,
     PubmedModule,
     NotesModule,
