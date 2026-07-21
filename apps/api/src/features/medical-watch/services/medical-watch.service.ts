@@ -21,7 +21,7 @@ export class MedicalWatchService {
     private readonly repository: MedicalWatchRepository,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'Europe/Paris' })
   async runDailyWatch(): Promise<void> {
     this.logger.log('Starting daily medical watch...');
     for (const specialty of Object.values(MedicalWatchSpecialty)) {

@@ -1,8 +1,8 @@
 import { Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MedicalWatchService } from './services/medical-watch.service';
 import { MedicalWatchArticleResponseDto } from './dtos/responses/medical-watch-article.response.dto';
-import { MedicalWatchSpecialty } from './enums/medical-watch-specialty.enum';
+import { GetMedicalWatchQueryDto } from './dtos/requests/get-medical-watch-query.dto';
 
 @ApiTags('medical-watch')
 @ApiBearerAuth()
@@ -11,10 +11,8 @@ export class MedicalWatchController {
   constructor(private readonly medicalWatchService: MedicalWatchService) {}
 
   @Get()
-  @ApiQuery({ name: 'specialty', required: false, enum: MedicalWatchSpecialty })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  getArticles(@Query('specialty') specialty?: MedicalWatchSpecialty, @Query('limit') limit?: number): Promise<MedicalWatchArticleResponseDto[]> {
-    return this.medicalWatchService.getArticles(specialty, limit);
+  getArticles(@Query() query: GetMedicalWatchQueryDto): Promise<MedicalWatchArticleResponseDto[]> {
+    return this.medicalWatchService.getArticles(query.specialty, query.limit);
   }
 
   @Post('trigger')

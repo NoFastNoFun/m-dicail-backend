@@ -5,6 +5,7 @@ export class AddMedicalWatch1750100000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "medical_watch_articles" (
         "pmid"             VARCHAR PRIMARY KEY,
+        "specialty"        VARCHAR NOT NULL,
         "title"            TEXT NOT NULL,
         "abstract"         TEXT NOT NULL,
         "authors"          JSONB NOT NULL,
