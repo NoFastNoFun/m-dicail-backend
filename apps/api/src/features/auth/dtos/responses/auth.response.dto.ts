@@ -13,12 +13,8 @@ export class UserResponseDto {
   }
 }
 
-export class RegisterResponseDto {
+export class AuthResponseDto {
   @ApiProperty() declare accessToken: string;
-  @ApiProperty({ default: 'bearer' }) declare tokenType: string;
-}
-
-export class LoginResponseDto {
-  @ApiProperty() declare accessToken: string;
+  @ApiProperty() declare refreshToken: string;
   @ApiProperty({ default: 'bearer' }) declare tokenType: string;
 }

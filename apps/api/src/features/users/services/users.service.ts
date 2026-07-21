@@ -17,4 +17,8 @@ export class UsersService {
   create(email: string, hashedPassword: string, fullName?: string): Promise<User> {
     return this.userRepository.save({ email, hashedPassword, fullName: fullName ?? null });
   }
+
+  updateRefreshToken(userId: string, hashedRefreshToken: string | null, refreshTokenExpiresAt: Date | null): Promise<User> {
+    return this.userRepository.save({ id: userId, hashedRefreshToken, refreshTokenExpiresAt });
+  }
 }

@@ -10,6 +10,8 @@ describe('AuthController', () => {
     authService = {
       register: jest.fn(),
       login: jest.fn(),
+      refresh: jest.fn(),
+      logout: jest.fn(),
       me: jest.fn(),
     } as unknown as jest.Mocked<AuthService>;
 
@@ -23,7 +25,7 @@ describe('AuthController', () => {
 
   it('register delegates to authService', async () => {
     const dto = { email: 'a@b.com', password: 'pass', fullName: 'User' };
-    const response = { accessToken: 'token', tokenType: 'bearer' };
+    const response = { accessToken: 'token', refreshToken: 'user-1.secret', tokenType: 'bearer' };
     authService.register.mockResolvedValue(response);
 
     await expect(controller.register(dto)).resolves.toBe(response);
@@ -32,11 +34,28 @@ describe('AuthController', () => {
 
   it('login delegates to authService', async () => {
     const dto = { email: 'a@b.com', password: 'pass' };
-    const response = { accessToken: 'token', tokenType: 'bearer' };
+    const response = { accessToken: 'token', refreshToken: 'user-1.secret', tokenType: 'bearer' };
     authService.login.mockResolvedValue(response);
 
     await expect(controller.login(dto)).resolves.toBe(response);
     expect(authService.login).toHaveBeenCalledWith(dto);
+  });
+
+  it('refresh delegates to authService', async () => {
+    const dto = { refreshToken: 'user-1.secret' };
+    const response = { accessToken: 'new-token', refreshToken: 'user-1.new-secret', tokenType: 'bearer' };
+    authService.refresh.mockResolvedValue(response);
+
+    await expect(controller.refresh(dto)).resolves.toBe(response);
+    expect(authService.refresh).toHaveBeenCalledWith(dto);
+  });
+
+  it('logout delegates to authService', async () => {
+    authService.logout.mockResolvedValue(undefined);
+
+    await controller.logout('user-1');
+
+    expect(authService.logout).toHaveBeenCalledWith('user-1');
   });
 
   it('me delegates to authService', async () => {
