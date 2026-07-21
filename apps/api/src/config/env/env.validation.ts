@@ -18,6 +18,14 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   declare NCBI_API_KEY?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  declare ACCESS_TOKEN_TTL: string;
+
+  @IsInt()
+  @Min(1)
+  declare REFRESH_TOKEN_TTL_DAYS: number;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

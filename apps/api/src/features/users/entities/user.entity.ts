@@ -24,4 +24,10 @@ export class User {
 
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
+
+  @Column({ name: 'hashed_refresh_token', type: 'varchar', nullable: true })
+  declare hashedRefreshToken: string | null;
+
+  @Column({ name: 'refresh_token_expires_at', type: 'timestamptz', nullable: true })
+  declare refreshTokenExpiresAt: Date | null;
 }
