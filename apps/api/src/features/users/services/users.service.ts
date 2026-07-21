@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UserRole } from '@app/shared';
 import { User } from '../entities/user.entity';
 import { UserRepository } from '../repositories/user.repository';
 
@@ -15,7 +16,22 @@ export class UsersService {
   }
 
   create(email: string, hashedPassword: string, fullName?: string): Promise<User> {
-    return this.userRepository.save({ email, hashedPassword, fullName: fullName ?? null });
+    return this.userRepository.save({
+      email,
+      hashedPassword,
+      fullName: fullName ?? null,
+      role: UserRole.PRATICIEN,
+    });
+  }
+
+  createPatientAccount(email: string, hashedPassword: string, patientId: string, fullName?: string): Promise<User> {
+    return this.userRepository.save({
+      email,
+      hashedPassword,
+      fullName: fullName ?? null,
+      role: UserRole.PATIENT,
+      patientId,
+    });
   }
 
   updateRefreshToken(userId: string, hashedRefreshToken: string | null, refreshTokenExpiresAt: Date | null): Promise<User> {

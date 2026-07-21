@@ -28,6 +28,10 @@ export class PatientRepository {
     return this.repo.save(patient);
   }
 
+  findById(id: string): Promise<Patient | null> {
+    return this.repo.findOne({ where: { id } });
+  }
+
   async deleteForUser(userId: string, id: string): Promise<boolean> {
     const result = await this.repo.delete({ id, userId });
     return result.affected === 1;

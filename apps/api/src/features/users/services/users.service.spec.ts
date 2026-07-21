@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UserRole } from '@app/shared';
 import { UsersService } from './users.service';
 import { UserRepository } from '../repositories/user.repository';
 import { User } from '../entities/user.entity';
@@ -12,6 +13,8 @@ describe('UsersService', () => {
     email: 'test@example.com',
     hashedPassword: 'hashed',
     fullName: 'Test User',
+    role: UserRole.PRATICIEN,
+    patientId: null,
     createdAt: new Date(),
     hashedRefreshToken: null,
     refreshTokenExpiresAt: null,
@@ -58,6 +61,7 @@ describe('UsersService', () => {
       email: 'test@example.com',
       hashedPassword: 'hashed',
       fullName: 'Test User',
+      role: UserRole.PRATICIEN,
     });
     expect(result).toBe(mockUser);
   });
@@ -71,6 +75,7 @@ describe('UsersService', () => {
       email: 'test@example.com',
       hashedPassword: 'hashed',
       fullName: null,
+      role: UserRole.PRATICIEN,
     });
   });
 
@@ -92,5 +97,21 @@ describe('UsersService', () => {
 
       expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', hashedRefreshToken: null, refreshTokenExpiresAt: null });
     });
+  });
+
+  it('createPatientAccount delegates to repository', async () => {
+    const patientUser = { ...mockUser, role: UserRole.PATIENT, patientId: 'patient_1' };
+    repository.save.mockResolvedValue(patientUser);
+
+    const result = await service.createPatientAccount('patient@example.com', 'hashed', 'patient_1', 'Patient');
+
+    expect(repository.save).toHaveBeenCalledWith({
+      email: 'patient@example.com',
+      hashedPassword: 'hashed',
+      fullName: 'Patient',
+      role: UserRole.PATIENT,
+      patientId: 'patient_1',
+    });
+    expect(result).toBe(patientUser);
   });
 });

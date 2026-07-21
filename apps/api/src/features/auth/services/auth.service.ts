@@ -1,19 +1,22 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { UsersService } from '@features/users/services/users.service';
+import { PatientsService } from '@features/patients/services/patients.service';
 import { User } from '@features/users/entities/user.entity';
 import { RegisterRequestDto } from '../dtos/requests/register.request.dto';
 import { LoginRequestDto } from '../dtos/requests/login.request.dto';
 import { RefreshRequestDto } from '../dtos/requests/refresh.request.dto';
-import { AuthResponseDto, UserResponseDto } from '../dtos/responses/auth.response.dto';
+import { CreatePatientAccountRequestDto } from '../dtos/requests/create-patient-account.request.dto';
+import { AuthResponseDto, CreatePatientResponseDto, UserResponseDto } from '../dtos/responses/auth.response.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly patientsService: PatientsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -26,6 +29,19 @@ export class AuthService {
     const user = await this.usersService.create(dto.email, hashedPassword, dto.fullName);
 
     return this.issueTokens(user);
+  }
+
+  async createPatientAccount(dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
+    const patientExists = await this.patientsService.findById(dto.patientId);
+    if (!patientExists) throw new NotFoundException(`Patient ${dto.patientId} introuvable`);
+
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) throw new ConflictException('Email déjà utilisé');
+
+    const hashedPassword = await argon2.hash(dto.password);
+    const user = await this.usersService.createPatientAccount(dto.email, hashedPassword, dto.patientId, dto.fullName);
+
+    return { user: new UserResponseDto(user) };
   }
 
   async login(dto: LoginRequestDto): Promise<AuthResponseDto> {
@@ -74,6 +90,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign({
       sub: user.id,
       email: user.email,
+      role: user.role,
     });
 
     const secret = randomBytes(64).toString('hex');
@@ -84,6 +101,6 @@ export class AuthService {
 
     await this.usersService.updateRefreshToken(user.id, hashedRefreshToken, refreshTokenExpiresAt);
 
-    return { accessToken, refreshToken: `${user.id}.${secret}`, tokenType: 'bearer' };
+    return { user: new UserResponseDto(user), accessToken, refreshToken: `${user.id}.${secret}`, tokenType: 'bearer' };
   }
 }

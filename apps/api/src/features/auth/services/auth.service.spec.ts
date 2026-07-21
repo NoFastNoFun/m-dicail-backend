@@ -1,9 +1,11 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as argon2 from 'argon2';
+import { UserRole } from '@app/shared';
 import { UsersService } from '@features/users/services/users.service';
+import { PatientsService } from '@features/patients/services/patients.service';
 import { User } from '@features/users/entities/user.entity';
 import { AuthService } from './auth.service';
 
@@ -15,6 +17,7 @@ jest.mock('argon2', () => ({
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: jest.Mocked<UsersService>;
+  let patientsService: jest.Mocked<PatientsService>;
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
 
@@ -23,6 +26,8 @@ describe('AuthService', () => {
     email: 'test@example.com',
     hashedPassword: 'hashed-password',
     fullName: 'Test User',
+    role: UserRole.PRATICIEN,
+    patientId: null,
     createdAt: new Date('2024-01-01'),
     hashedRefreshToken: 'hashed-refresh-token',
     refreshTokenExpiresAt: new Date('2999-01-01'),
@@ -34,7 +39,12 @@ describe('AuthService', () => {
       findById: jest.fn(),
       create: jest.fn(),
       updateRefreshToken: jest.fn(),
+      createPatientAccount: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
+
+    patientsService = {
+      findById: jest.fn(),
+    } as unknown as jest.Mocked<PatientsService>;
 
     jwtService = {
       sign: jest.fn().mockReturnValue('access-token'),
@@ -48,6 +58,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
+        { provide: PatientsService, useValue: patientsService },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configService },
       ],
@@ -75,8 +86,19 @@ describe('AuthService', () => {
       });
 
       expect(usersService.create).toHaveBeenCalledWith('test@example.com', 'new-password-hash', 'Test User');
-      expect(jwtService.sign).toHaveBeenCalledWith({ sub: 'user-1', email: 'test@example.com' });
+      expect(jwtService.sign).toHaveBeenCalledWith({
+        sub: 'user-1',
+        email: 'test@example.com',
+        role: UserRole.PRATICIEN,
+      });
       expect(usersService.updateRefreshToken).toHaveBeenCalledWith('user-1', 'new-refresh-hash', expect.any(Date));
+      expect(result.user).toEqual({
+        id: 'user-1',
+        email: 'test@example.com',
+        fullName: 'Test User',
+        role: UserRole.PRATICIEN,
+        patientId: null,
+      });
       expect(result.accessToken).toBe('access-token');
       expect(result.tokenType).toBe('bearer');
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
@@ -89,6 +111,57 @@ describe('AuthService', () => {
     });
   });
 
+  describe('createPatientAccount', () => {
+    const dto = {
+      email: 'patient@example.com',
+      password: 'Patient1*',
+      fullName: 'Patient',
+      patientId: 'patient_1',
+    };
+
+    const patientUser: User = {
+      ...mockUser,
+      id: 'user-2',
+      email: dto.email,
+      fullName: 'Patient',
+      role: UserRole.PATIENT,
+      patientId: 'patient_1',
+    };
+
+    it('creates a patient account', async () => {
+      patientsService.findById.mockResolvedValue({ id: 'patient_1' } as never);
+      usersService.findByEmail.mockResolvedValue(null);
+      (argon2.hash as jest.Mock).mockResolvedValue('new-hash');
+      usersService.createPatientAccount.mockResolvedValue(patientUser);
+
+      const result = await service.createPatientAccount(dto);
+
+      expect(usersService.createPatientAccount).toHaveBeenCalledWith(dto.email, 'new-hash', dto.patientId, dto.fullName);
+      expect(result).toEqual({
+        user: {
+          id: 'user-2',
+          email: dto.email,
+          fullName: 'Patient',
+          role: UserRole.PATIENT,
+          patientId: 'patient_1',
+        },
+      });
+    });
+
+    it('throws NotFoundException when patient does not exist', async () => {
+      patientsService.findById.mockResolvedValue(null);
+
+      await expect(service.createPatientAccount(dto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when email already exists', async () => {
+      patientsService.findById.mockResolvedValue({ id: 'patient_1' } as never);
+      usersService.findByEmail.mockResolvedValue(mockUser);
+
+      await expect(service.createPatientAccount(dto)).rejects.toThrow(ConflictException);
+    });
+  });
+
   describe('login', () => {
     it('returns an access token + refresh token for valid credentials', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
@@ -96,7 +169,15 @@ describe('AuthService', () => {
 
       const result = await service.login({ email: 'test@example.com', password: 'password123' });
 
+      expect(result.user).toEqual({
+        id: 'user-1',
+        email: 'test@example.com',
+        fullName: 'Test User',
+        role: UserRole.PRATICIEN,
+        patientId: null,
+      });
       expect(result.accessToken).toBe('access-token');
+      expect(result.tokenType).toBe('bearer');
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
       expect(usersService.updateRefreshToken).toHaveBeenCalledWith('user-1', 'new-refresh-hash', expect.any(Date));
     });
@@ -174,7 +255,13 @@ describe('AuthService', () => {
 
       const result = await service.me('user-1');
 
-      expect(result).toEqual({ id: 'user-1', email: 'test@example.com', fullName: 'Test User' });
+      expect(result).toEqual({
+        id: 'user-1',
+        email: 'test@example.com',
+        fullName: 'Test User',
+        role: UserRole.PRATICIEN,
+        patientId: null,
+      });
     });
 
     it('throws UnauthorizedException when user is not found', async () => {

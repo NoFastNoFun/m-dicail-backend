@@ -1,1 +1,1 @@
-pnpm pre-check
+pnpm run pre-check
