@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '@app/shared';
+import { CurrentUser, Roles, RolesGuard, UserRole } from '@app/shared';
 import { PatientsService } from './services/patients.service';
 import { PatientCreateRequestDto } from './dtos/requests/patient-create.request.dto';
 import { PatientUpdateRequestDto } from './dtos/requests/patient-update.request.dto';
@@ -8,6 +8,8 @@ import { PatientResponseDto } from './dtos/responses/patient.response.dto';
 
 @ApiTags('patients')
 @ApiBearerAuth()
+@Roles(UserRole.PRATICIEN)
+@UseGuards(RolesGuard)
 @Controller({ path: 'patients', version: '1' })
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
