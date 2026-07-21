@@ -22,7 +22,11 @@ describe('NotesController', () => {
 
   it('process delegates to notesService', () => {
     const dto = { session_id: 'session-1', raw_text: 'text', language: 'fr' };
-    const response = { session_id: 'session-1', processed_text: 'text' };
+    const response = {
+      session_id: 'session-1',
+      processed_text: 'text',
+      soap_note: { subjective: 's', objective: 'o', assessment: 'a', plan: 'p', other: '' },
+    };
     notesService.process.mockReturnValue(response);
 
     expect(controller.process(dto)).toBe(response);
