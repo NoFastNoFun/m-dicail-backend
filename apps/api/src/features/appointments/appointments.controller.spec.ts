@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppointmentsController } from './appointments.controller';
+import { AppointmentStatus } from './enums/appointment-status.enum';
 import { AppointmentsService } from './services/appointments.service';
 
 describe('AppointmentsController', () => {
@@ -12,7 +13,7 @@ describe('AppointmentsController', () => {
     patient_id: 'patient_1',
     starts_at: new Date('2026-07-21T09:00:00.000Z'),
     ends_at: new Date('2026-07-21T09:30:00.000Z'),
-    status: 'scheduled',
+    status: AppointmentStatus.SCHEDULED,
     notes: null,
     created_at: new Date(),
     updated_at: new Date(),
@@ -63,7 +64,7 @@ describe('AppointmentsController', () => {
     const dto = {
       patient_id: 'patient_1',
       starts_at: '2026-07-21T10:00:00.000Z',
-      status: 'cancelled' as const,
+      status: AppointmentStatus.CANCELLED,
     };
     appointmentsService.update.mockResolvedValue(appointment);
 

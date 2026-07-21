@@ -6,7 +6,7 @@ import { AppointmentCreateRequestDto } from '../dtos/requests/appointment-create
 import { AppointmentUpdateRequestDto } from '../dtos/requests/appointment-update.request.dto';
 import { AppointmentResponseDto } from '../dtos/responses/appointment.response.dto';
 import { AppointmentNotFoundException } from '../exceptions/appointment-not-found.exception';
-import { AppointmentStatus } from '../entities/appointment.entity';
+import { AppointmentStatus } from '../enums/appointment-status.enum';
 
 @Injectable()
 export class AppointmentsService {
@@ -47,7 +47,7 @@ export class AppointmentsService {
       patientId: dto.patient_id,
       startsAt: new Date(dto.starts_at),
       endsAt: dto.ends_at ? new Date(dto.ends_at) : null,
-      status: (dto.status ?? 'scheduled') as AppointmentStatus,
+      status: dto.status ?? AppointmentStatus.SCHEDULED,
       notes: dto.notes ?? null,
     });
     return new AppointmentResponseDto(appointment);
@@ -64,7 +64,7 @@ export class AppointmentsService {
       patientId: dto.patient_id,
       startsAt: new Date(dto.starts_at),
       endsAt: dto.ends_at ? new Date(dto.ends_at) : null,
-      status: (dto.status ?? appointment.status) as AppointmentStatus,
+      status: dto.status ?? appointment.status,
       notes: dto.notes ?? null,
     });
     return new AppointmentResponseDto(updated);

@@ -4,6 +4,7 @@ import { AppointmentsService } from './appointments.service';
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { PatientRepository } from '../../patients/repositories/patient.repository';
 import { Appointment } from '../entities/appointment.entity';
+import { AppointmentStatus } from '../enums/appointment-status.enum';
 import { AppointmentNotFoundException } from '../exceptions/appointment-not-found.exception';
 import { Patient } from '../../patients/entities/patient.entity';
 
@@ -26,7 +27,7 @@ describe('AppointmentsService', () => {
     patientId: 'patient_abc',
     startsAt: now,
     endsAt: new Date('2026-07-21T09:30:00.000Z'),
-    status: 'scheduled',
+    status: AppointmentStatus.SCHEDULED,
     notes: null,
     createdAt: now,
     updatedAt: now,
@@ -111,7 +112,7 @@ describe('AppointmentsService', () => {
       expect(appointmentRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           endsAt: null,
-          status: 'scheduled',
+          status: AppointmentStatus.SCHEDULED,
           notes: null,
         }),
       );
@@ -150,7 +151,7 @@ describe('AppointmentsService', () => {
       patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
       appointmentRepository.save.mockResolvedValue({
         ...mockAppointment,
-        status: 'cancelled',
+        status: AppointmentStatus.CANCELLED,
         notes: 'annule',
       });
 
@@ -158,11 +159,11 @@ describe('AppointmentsService', () => {
         patient_id: 'patient_abc',
         starts_at: '2026-07-21T10:00:00.000Z',
         ends_at: '2026-07-21T10:30:00.000Z',
-        status: 'cancelled',
+        status: AppointmentStatus.CANCELLED,
         notes: 'annule',
       });
 
-      expect(result.status).toBe('cancelled');
+      expect(result.status).toBe(AppointmentStatus.CANCELLED);
       expect(appointmentRepository.save).toHaveBeenCalled();
     });
 
@@ -178,7 +179,7 @@ describe('AppointmentsService', () => {
 
       expect(appointmentRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: 'scheduled',
+          status: AppointmentStatus.SCHEDULED,
           endsAt: null,
           notes: null,
         }),

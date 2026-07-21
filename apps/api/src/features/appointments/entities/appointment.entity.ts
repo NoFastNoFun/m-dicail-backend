@@ -1,6 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
-
-export type AppointmentStatus = 'scheduled' | 'cancelled' | 'completed';
+import { AppointmentStatus } from '../enums/appointment-status.enum';
 
 @Entity('appointments')
 export class Appointment {
@@ -24,7 +23,7 @@ export class Appointment {
   @Column({
     name: 'status',
     type: 'varchar',
-    default: 'scheduled',
+    default: AppointmentStatus.SCHEDULED,
   })
   declare status: AppointmentStatus;
 

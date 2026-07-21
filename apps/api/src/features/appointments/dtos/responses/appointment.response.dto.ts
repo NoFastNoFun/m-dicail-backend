@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Appointment } from '../../entities/appointment.entity';
+import { AppointmentStatus } from '../../enums/appointment-status.enum';
 
 export class AppointmentResponseDto {
   @ApiProperty() declare id: string;
@@ -7,7 +8,7 @@ export class AppointmentResponseDto {
   @ApiProperty() declare patient_id: string;
   @ApiProperty() declare starts_at: Date;
   @ApiProperty({ nullable: true }) declare ends_at: Date | null;
-  @ApiProperty({ enum: ['scheduled', 'cancelled', 'completed'] }) declare status: string;
+  @ApiProperty({ enum: AppointmentStatus }) declare status: AppointmentStatus;
   @ApiProperty({ nullable: true }) declare notes: string | null;
   @ApiProperty() declare created_at: Date;
   @ApiProperty() declare updated_at: Date;
