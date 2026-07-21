@@ -72,7 +72,7 @@ describe('SoapClassifierService', () => {
       const text =
         'Le patient a mal au dos. ' +
         'Sa posture au quotidien est très mauvaise et il soulève de lourdes charges tous les jours. ' +
-        'Il va falloir lui prescrire des exercices d\'étirement.';
+        "Il va falloir lui prescrire des exercices d'étirement.";
 
       const result = service.classify(text);
 
