@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { UserRole } from '@app/shared';
 
 @Entity('users')
 export class User {
@@ -15,6 +16,18 @@ export class User {
   @Column({ name: 'full_name', type: 'varchar', nullable: true })
   declare fullName: string | null;
 
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.PRATICIEN })
+  declare role: UserRole;
+
+  @Column({ name: 'patient_id', type: 'varchar', nullable: true })
+  declare patientId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
+
+  @Column({ name: 'hashed_refresh_token', type: 'varchar', nullable: true })
+  declare hashedRefreshToken: string | null;
+
+  @Column({ name: 'refresh_token_expires_at', type: 'timestamptz', nullable: true })
+  declare refreshTokenExpiresAt: Date | null;
 }

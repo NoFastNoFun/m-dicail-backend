@@ -25,13 +25,7 @@ describe('NotesController', () => {
     const response = {
       session_id: 'session-1',
       processed_text: 'text',
-      soap_note: {
-        subjective: '',
-        objective: '',
-        assessment: '',
-        plan: '',
-        other: '',
-      },
+      soap_note: { subjective: 's', objective: 'o', assessment: 'a', plan: 'p', other: '' },
     };
     notesService.process.mockReturnValue(response);
 
