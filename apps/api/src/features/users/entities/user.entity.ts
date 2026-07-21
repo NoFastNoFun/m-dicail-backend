@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { UserRole } from '@app/shared';
 
 @Entity('users')
 export class User {
@@ -14,6 +15,12 @@ export class User {
 
   @Column({ name: 'full_name', type: 'varchar', nullable: true })
   declare fullName: string | null;
+
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.PRATICIEN })
+  declare role: UserRole;
+
+  @Column({ name: 'patient_id', type: 'varchar', nullable: true })
+  declare patientId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
