@@ -68,6 +68,16 @@ describe('AppointmentsService', () => {
 
     it('throws when from/to missing', async () => {
       await expect(service.list(userId)).rejects.toThrow(BadRequestException);
+      await expect(service.list(userId, '2026-07-21T00:00:00.000Z')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when from/to are invalid dates', async () => {
+      await expect(service.list(userId, 'not-a-date', '2026-07-21T23:59:59.999Z')).rejects.toThrow(BadRequestException);
+      await expect(service.list(userId, '2026-07-21T00:00:00.000Z', 'also-bad')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when from is after to', async () => {
+      await expect(service.list(userId, '2026-07-22T00:00:00.000Z', '2026-07-21T00:00:00.000Z')).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -86,6 +96,27 @@ describe('AppointmentsService', () => {
       expect(patientRepository.findByIdForUser).toHaveBeenCalledWith(userId, 'patient_abc');
     });
 
+    it('creates without ends_at and uses default status', async () => {
+      patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
+      appointmentRepository.save.mockResolvedValue({
+        ...mockAppointment,
+        endsAt: null,
+      });
+
+      await service.create(userId, {
+        patient_id: 'patient_abc',
+        starts_at: '2026-07-21T09:00:00.000Z',
+      });
+
+      expect(appointmentRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          endsAt: null,
+          status: 'scheduled',
+          notes: null,
+        }),
+      );
+    });
+
     it('rejects when patient is not owned', async () => {
       patientRepository.findByIdForUser.mockResolvedValue(null);
 
@@ -99,13 +130,91 @@ describe('AppointmentsService', () => {
   });
 
   describe('getOne', () => {
+    it('returns appointment when found', async () => {
+      appointmentRepository.findByIdForUser.mockResolvedValue(mockAppointment);
+
+      const result = await service.getOne(userId, mockAppointment.id);
+
+      expect(result.id).toBe(mockAppointment.id);
+    });
+
     it('throws when not found', async () => {
       appointmentRepository.findByIdForUser.mockResolvedValue(null);
       await expect(service.getOne(userId, 'missing')).rejects.toThrow(AppointmentNotFoundException);
     });
   });
 
+  describe('update', () => {
+    it('updates when appointment and patient exist', async () => {
+      appointmentRepository.findByIdForUser.mockResolvedValue(mockAppointment);
+      patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
+      appointmentRepository.save.mockResolvedValue({
+        ...mockAppointment,
+        status: 'cancelled',
+        notes: 'annule',
+      });
+
+      const result = await service.update(userId, mockAppointment.id, {
+        patient_id: 'patient_abc',
+        starts_at: '2026-07-21T10:00:00.000Z',
+        ends_at: '2026-07-21T10:30:00.000Z',
+        status: 'cancelled',
+        notes: 'annule',
+      });
+
+      expect(result.status).toBe('cancelled');
+      expect(appointmentRepository.save).toHaveBeenCalled();
+    });
+
+    it('keeps existing status when dto status omitted', async () => {
+      appointmentRepository.findByIdForUser.mockResolvedValue(mockAppointment);
+      patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
+      appointmentRepository.save.mockResolvedValue(mockAppointment);
+
+      await service.update(userId, mockAppointment.id, {
+        patient_id: 'patient_abc',
+        starts_at: '2026-07-21T10:00:00.000Z',
+      });
+
+      expect(appointmentRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'scheduled',
+          endsAt: null,
+          notes: null,
+        }),
+      );
+    });
+
+    it('throws when appointment not found', async () => {
+      appointmentRepository.findByIdForUser.mockResolvedValue(null);
+
+      await expect(
+        service.update(userId, 'missing', {
+          patient_id: 'patient_abc',
+          starts_at: '2026-07-21T10:00:00.000Z',
+        }),
+      ).rejects.toThrow(AppointmentNotFoundException);
+    });
+
+    it('throws when patient is not owned', async () => {
+      appointmentRepository.findByIdForUser.mockResolvedValue(mockAppointment);
+      patientRepository.findByIdForUser.mockResolvedValue(null);
+
+      await expect(
+        service.update(userId, mockAppointment.id, {
+          patient_id: 'missing',
+          starts_at: '2026-07-21T10:00:00.000Z',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('delete', () => {
+    it('deletes when found', async () => {
+      appointmentRepository.deleteForUser.mockResolvedValue(true);
+      await expect(service.delete(userId, mockAppointment.id)).resolves.toBeUndefined();
+    });
+
     it('throws when not found', async () => {
       appointmentRepository.deleteForUser.mockResolvedValue(false);
       await expect(service.delete(userId, 'missing')).rejects.toThrow(AppointmentNotFoundException);
