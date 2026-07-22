@@ -12,6 +12,7 @@ import { SessionsModule } from './features/sessions/sessions.module';
 import { PubmedModule } from './features/pubmed/pubmed.module';
 import { NotesModule } from './features/notes/notes.module';
 import { HealthModule } from './features/health/health.module';
+import { ExercisesModule } from './features/exercises/exercises.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { HealthModule } from './features/health/health.module';
     SessionsModule,
     PubmedModule,
     NotesModule,
+    ExercisesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
