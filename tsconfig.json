@@ -23,5 +23,8 @@
       "@app/shared": ["libs/shared/src/index"],
       "@app/shared/*": ["libs/shared/src/*"]
     }
+  },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
   }
 }
