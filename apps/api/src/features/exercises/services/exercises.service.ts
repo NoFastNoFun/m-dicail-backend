@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ExerciseRepository } from '../repositories/exercise.repository';
 import { PatientExerciseRepository } from '../repositories/patient-exercise.repository';
+import { PatientRepository } from '../../patients/repositories/patient.repository';
 import { ExerciseCreateRequestDto } from '../dtos/requests/exercise-create.request.dto';
 import { PatientExerciseCreateRequestDto } from '../dtos/requests/patient-exercise-create.request.dto';
 import { PatientExerciseUpdateRequestDto } from '../dtos/requests/patient-exercise-update.request.dto';
@@ -9,6 +10,7 @@ import { ExerciseResponseDto } from '../dtos/responses/exercise.response.dto';
 import { PatientExerciseResponseDto } from '../dtos/responses/patient-exercise.response.dto';
 import { ExerciseNotFoundException } from '../exceptions/exercise-not-found.exception';
 import { PatientExerciseNotFoundException } from '../exceptions/patient-exercise-not-found.exception';
+import { PatientNotFoundException } from '../exceptions/patient-not-found.exception';
 import { PatientExerciseStatus } from '../entities/patient-exercise.entity';
 
 @Injectable()
@@ -16,6 +18,7 @@ export class ExercisesService {
   constructor(
     private readonly exerciseRepository: ExerciseRepository,
     private readonly patientExerciseRepository: PatientExerciseRepository,
+    private readonly patientRepository: PatientRepository,
   ) {}
 
   // Exercise CRUD
@@ -80,6 +83,10 @@ export class ExercisesService {
   }
 
   async assignExercise(userId: string, dto: PatientExerciseCreateRequestDto): Promise<PatientExerciseResponseDto> {
+    // Verify patient belongs to the practitioner
+    const patient = await this.patientRepository.findByIdForUser(userId, dto.patientId);
+    if (!patient) throw new PatientNotFoundException(dto.patientId);
+
     // Verify exercise exists
     const exercise = await this.exerciseRepository.findById(dto.exerciseId);
     if (!exercise) throw new ExerciseNotFoundException(dto.exerciseId);

@@ -6,9 +6,10 @@ import { ExerciseRepository } from './repositories/exercise.repository';
 import { PatientExerciseRepository } from './repositories/patient-exercise.repository';
 import { ExercisesService } from './services/exercises.service';
 import { ExercisesController } from './exercises.controller';
+import { PatientsModule } from '../patients/patients.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Exercise, PatientExercise])],
+  imports: [TypeOrmModule.forFeature([Exercise, PatientExercise]), PatientsModule],
   controllers: [ExercisesController],
   providers: [ExercisesService, ExerciseRepository, PatientExerciseRepository],
   exports: [ExercisesService, ExerciseRepository, PatientExerciseRepository, TypeOrmModule],

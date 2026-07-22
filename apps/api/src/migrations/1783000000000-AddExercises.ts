@@ -32,7 +32,8 @@ export class AddExercises1783000000000 implements MigrationInterface {
         "assigned_at" TIMESTAMPTZ NOT NULL,
         "created_at"  TIMESTAMPTZ NOT NULL DEFAULT now(),
         "updated_at"  TIMESTAMPTZ NOT NULL DEFAULT now(),
-        CONSTRAINT "fk_patient_exercise_exercise" FOREIGN KEY ("exercise_id") REFERENCES "exercises" ("id") ON DELETE CASCADE
+        CONSTRAINT "fk_patient_exercise_exercise" FOREIGN KEY ("exercise_id") REFERENCES "exercises" ("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_patient_exercise_patient" FOREIGN KEY ("patient_id") REFERENCES "patients" ("id") ON DELETE CASCADE
       )
     `);
 
