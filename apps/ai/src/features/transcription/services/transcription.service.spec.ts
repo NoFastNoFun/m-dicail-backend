@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { TranscriptionService } from './transcription.service';
 import { WhisperClientService } from './whisper-client.service';
+import { UploadedAudioFile } from '../interfaces/uploaded-audio-file.interface';
 
 describe('TranscriptionService', () => {
   const whisperClient = {
@@ -16,19 +17,19 @@ describe('TranscriptionService', () => {
   it('rejects missing upload', async () => {
     await expect(
       service.transcribe({
-        file: undefined as unknown as Express.Multer.File,
+        file: undefined as unknown as UploadedAudioFile,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('returns whisper text and cleans temp file path flow', async () => {
     (whisperClient.transcribeFile as jest.Mock).mockResolvedValue('Bonjour');
-    const file = {
+    const file: UploadedAudioFile = {
       buffer: Buffer.from('RIFF'),
       originalname: 'consult.wav',
       mimetype: 'audio/wav',
       size: 4,
-    } as Express.Multer.File;
+    };
 
     await expect(service.transcribe({ file, language: 'fr', sessionId: 's1' })).resolves.toEqual({
       text: 'Bonjour',

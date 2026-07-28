@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { TranscriptionService } from './services/transcription.service';
 import { TranscriptionResponseDto } from './dtos/responses/transcription.response.dto';
+import { UploadedAudioFile } from './interfaces/uploaded-audio-file.interface';
 
 @ApiTags('transcriptions')
 @ApiBearerAuth()
@@ -30,7 +31,7 @@ export class TranscriptionController {
     }),
   )
   transcribe(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: UploadedAudioFile,
     @Body('language') language?: string,
     @Body('session_id') sessionId?: string,
   ): Promise<TranscriptionResponseDto> {

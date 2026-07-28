@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { WhisperClientService } from './whisper-client.service';
 import { TranscriptionResponseDto } from '../dtos/responses/transcription.response.dto';
+import { UploadedAudioFile } from '../interfaces/uploaded-audio-file.interface';
 
 @Injectable()
 export class TranscriptionService {
@@ -15,7 +16,11 @@ export class TranscriptionService {
 
   constructor(private readonly whisperClient: WhisperClientService) {}
 
-  async transcribe(params: { file: Express.Multer.File; language?: string; sessionId?: string }): Promise<TranscriptionResponseDto> {
+  async transcribe(params: {
+    file: UploadedAudioFile;
+    language?: string;
+    sessionId?: string;
+  }): Promise<TranscriptionResponseDto> {
     const { file, language = 'fr', sessionId } = params;
     if (!file?.buffer && !file?.path && !file?.stream) {
       throw new BadRequestException('Fichier audio manquant');
@@ -41,7 +46,7 @@ export class TranscriptionService {
     }
   }
 
-  private async persistUpload(file: Express.Multer.File): Promise<string> {
+  private async persistUpload(file: UploadedAudioFile): Promise<string> {
     const dir = join(tmpdir(), 'medicail-transcriptions');
     await mkdir(dir, { recursive: true });
     const ext = this.extensionFor(file.originalname, file.mimetype);
