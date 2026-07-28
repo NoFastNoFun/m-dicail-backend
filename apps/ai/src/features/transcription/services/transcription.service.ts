@@ -16,11 +16,7 @@ export class TranscriptionService {
 
   constructor(private readonly whisperClient: WhisperClientService) {}
 
-  async transcribe(params: {
-    file: UploadedAudioFile;
-    language?: string;
-    sessionId?: string;
-  }): Promise<TranscriptionResponseDto> {
+  async transcribe(params: { file: UploadedAudioFile; language?: string; sessionId?: string }): Promise<TranscriptionResponseDto> {
     const { file, language = 'fr', sessionId } = params;
     if (!file?.buffer && !file?.path && !file?.stream) {
       throw new BadRequestException('Fichier audio manquant');
