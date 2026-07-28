@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, Max, Min, validateSync } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
 
 class EnvironmentVariables {
   @IsInt()
@@ -10,6 +10,17 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   declare SECRET_KEY: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  declare WHISPER_BASE_URL: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1000)
+  @Max(3_600_000)
+  declare WHISPER_TIMEOUT_MS?: number;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

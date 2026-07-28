@@ -45,6 +45,10 @@ services:
     environment:
       - AI_PORT=${AI_PORT:-8001}
       - SECRET_KEY=${SECRET_KEY}
+      - WHISPER_BASE_URL=${WHISPER_BASE_URL:-http://host.docker.internal:9000}
+      - WHISPER_TIMEOUT_MS=${WHISPER_TIMEOUT_MS:-600000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
