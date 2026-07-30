@@ -184,6 +184,7 @@ describe('ExercisesService', () => {
 
       const result = await service.updateExercise('exercise_123', dto);
 
+      expect(result.name).toBe('Updated Exercise');
       expect(exerciseRepository.findById).toHaveBeenCalledWith('exercise_123');
       expect(exerciseRepository.save).toHaveBeenCalled();
     });
@@ -191,7 +192,14 @@ describe('ExercisesService', () => {
     it('should throw ExerciseNotFoundException when exercise not found', async () => {
       exerciseRepository.findById.mockResolvedValue(null);
 
-      await expect(service.updateExercise('invalid_id', {})).rejects.toThrow(ExerciseNotFoundException);
+      const dto = {
+        name: 'Updated Exercise',
+        description: 'Updated Description',
+        category: 'Updated Category',
+        instructions: 'Updated Instructions',
+      };
+
+      await expect(service.updateExercise('invalid_id', dto)).rejects.toThrow(ExerciseNotFoundException);
     });
   });
 
@@ -323,6 +331,7 @@ describe('ExercisesService', () => {
 
       const result = await service.updatePatientExercise('1', 'patient_exercise_123', dto);
 
+      expect(result.notes).toBe('Updated notes');
       expect(patientExerciseRepository.findByIdForUser).toHaveBeenCalledWith('1', 'patient_exercise_123');
       expect(patientExerciseRepository.save).toHaveBeenCalled();
     });

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { Exercise } from '../entities/exercise.entity';
 
 @Injectable()
@@ -8,7 +8,7 @@ export class ExerciseRepository {
   constructor(@InjectRepository(Exercise) private readonly repo: Repository<Exercise>) {}
 
   findAll(category?: string, query?: string): Promise<Exercise[]> {
-    const where: any = {};
+    const where: FindOptionsWhere<Exercise> = {};
 
     if (category) {
       where.category = category;
