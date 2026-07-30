@@ -16,6 +16,8 @@ describe('UsersService', () => {
     role: UserRole.PRATICIEN,
     patientId: null,
     createdAt: new Date(),
+    hashedRefreshToken: null,
+    refreshTokenExpiresAt: null,
   };
 
   beforeEach(async () => {
@@ -74,6 +76,26 @@ describe('UsersService', () => {
       hashedPassword: 'hashed',
       fullName: null,
       role: UserRole.PRATICIEN,
+    });
+  });
+
+  describe('updateRefreshToken', () => {
+    it('persists the hashed refresh token and its expiry', async () => {
+      const expiresAt = new Date('2026-07-28T00:00:00.000Z');
+      repository.save.mockResolvedValue({ ...mockUser, hashedRefreshToken: 'hashed-refresh', refreshTokenExpiresAt: expiresAt });
+
+      const result = await service.updateRefreshToken('user-1', 'hashed-refresh', expiresAt);
+
+      expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', hashedRefreshToken: 'hashed-refresh', refreshTokenExpiresAt: expiresAt });
+      expect(result.hashedRefreshToken).toBe('hashed-refresh');
+    });
+
+    it('clears the refresh token when passed null values (logout)', async () => {
+      repository.save.mockResolvedValue({ ...mockUser, hashedRefreshToken: null, refreshTokenExpiresAt: null });
+
+      await service.updateRefreshToken('user-1', null, null);
+
+      expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', hashedRefreshToken: null, refreshTokenExpiresAt: null });
     });
   });
 

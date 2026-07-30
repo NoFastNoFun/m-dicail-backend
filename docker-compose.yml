@@ -7,6 +7,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Local/dev only — publishes Postgres on the host. Never use this file on the VPS;
+    # production is m-dicail-deployment/docker/docker-compose.prod.yml (no host DB/API ports).
     ports:
       - "5432:5432"
     healthcheck:
@@ -27,6 +29,8 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NCBI_API_KEY=${NCBI_API_KEY}
+      - ACCESS_TOKEN_TTL=${ACCESS_TOKEN_TTL:-1h}
+      - REFRESH_TOKEN_TTL_DAYS=${REFRESH_TOKEN_TTL_DAYS:-7}
     depends_on:
       postgres:
         condition: service_healthy

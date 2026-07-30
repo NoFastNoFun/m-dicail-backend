@@ -1,6 +1,6 @@
 {
   "name": "m-dicail-backend",
-  "version": "0.1.0",
+  "version": "0.0.4",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
@@ -41,6 +41,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.0",
+    "dotenv-expand": "^13.0.0",
     "express": "^4.22.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

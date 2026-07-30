@@ -33,4 +33,8 @@ export class UsersService {
       patientId,
     });
   }
+
+  updateRefreshToken(userId: string, hashedRefreshToken: string | null, refreshTokenExpiresAt: Date | null): Promise<User> {
+    return this.userRepository.save({ id: userId, hashedRefreshToken, refreshTokenExpiresAt });
+  }
 }
