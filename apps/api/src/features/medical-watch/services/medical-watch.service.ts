@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
-import { MedicalWatchArticle } from '../entities/medical-watch-article.entity';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
+import { MedicalWatchArticleResponseDto } from '../dtos/responses/medical-watch-article.response.dto';
 
 const WATCH_QUERIES: Record<MedicalWatchSpecialty, string> = {
   [MedicalWatchSpecialty.REHABILITATION]: 'physiotherapy rehabilitation',
@@ -36,8 +36,9 @@ export class MedicalWatchService {
     }
   }
 
-  getArticles(specialty?: MedicalWatchSpecialty, limit?: number): Promise<MedicalWatchArticle[]> {
-    return this.repository.findAll(specialty, limit);
+  async getArticles(specialty?: MedicalWatchSpecialty, limit?: number): Promise<MedicalWatchArticleResponseDto[]> {
+    const articles = await this.repository.findAll(specialty, limit);
+    return articles.map((a) => new MedicalWatchArticleResponseDto(a));
   }
 
   private async fetchAndStore(specialty: MedicalWatchSpecialty): Promise<void> {

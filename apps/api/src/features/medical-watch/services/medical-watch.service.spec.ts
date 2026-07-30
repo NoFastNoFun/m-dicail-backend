@@ -23,6 +23,18 @@ describe('MedicalWatchService', () => {
     fetchedAt: new Date('2024-06-01'),
   };
 
+  const mockArticleDto = {
+    pmid: '12345',
+    specialty: MedicalWatchSpecialty.REHABILITATION,
+    title: 'Test Article',
+    abstract: 'Test abstract',
+    authors: ['Author 1'],
+    publication_date: '2024-01-01',
+    doi: '10.1234/test',
+    search_query: 'physiotherapy rehabilitation',
+    fetched_at: new Date('2024-06-01'),
+  };
+
   beforeEach(async () => {
     pubmedService = {
       search: jest.fn(),
@@ -59,7 +71,7 @@ describe('MedicalWatchService', () => {
       const result = await service.getArticles();
 
       expect(repository.findAll).toHaveBeenCalledWith(undefined, undefined);
-      expect(result).toEqual([mockArticle]);
+      expect(result).toEqual([mockArticleDto]);
     });
 
     it('should return filtered articles by specialty', async () => {
@@ -68,7 +80,7 @@ describe('MedicalWatchService', () => {
       const result = await service.getArticles(MedicalWatchSpecialty.REHABILITATION);
 
       expect(repository.findAll).toHaveBeenCalledWith(MedicalWatchSpecialty.REHABILITATION, undefined);
-      expect(result).toEqual([mockArticle]);
+      expect(result).toEqual([mockArticleDto]);
     });
 
     it('should return limited number of articles', async () => {
@@ -77,7 +89,7 @@ describe('MedicalWatchService', () => {
       const result = await service.getArticles(undefined, 5);
 
       expect(repository.findAll).toHaveBeenCalledWith(undefined, 5);
-      expect(result).toEqual([mockArticle]);
+      expect(result).toEqual([mockArticleDto]);
     });
 
     it('should return filtered and limited articles', async () => {
@@ -86,7 +98,7 @@ describe('MedicalWatchService', () => {
       const result = await service.getArticles(MedicalWatchSpecialty.MUSCULOSKELETAL, 10);
 
       expect(repository.findAll).toHaveBeenCalledWith(MedicalWatchSpecialty.MUSCULOSKELETAL, 10);
-      expect(result).toEqual([mockArticle]);
+      expect(result).toEqual([mockArticleDto]);
     });
   });
 
