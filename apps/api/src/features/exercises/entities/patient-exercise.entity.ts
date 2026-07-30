@@ -20,8 +20,8 @@ export class PatientExercise {
   @Column({ name: 'exercise_id', type: 'varchar' })
   declare exerciseId: string;
 
-  @Column({ name: 'user_id', type: 'integer' })
-  declare userId: number;
+  @Column({ name: 'user_id', type: 'uuid' })
+  declare userId: string;
 
   @Column({
     name: 'status',

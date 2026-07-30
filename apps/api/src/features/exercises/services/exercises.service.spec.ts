@@ -48,7 +48,7 @@ describe('ExercisesService', () => {
     id: 'patient_exercise_123',
     patientId: 'patient_123',
     exerciseId: 'exercise_123',
-    userId: 1,
+    userId: '1',
     status: PatientExerciseStatus.ASSIGNED,
     notes: 'Test notes',
     sets: 3,
@@ -198,7 +198,7 @@ describe('ExercisesService', () => {
   describe('deleteExercise', () => {
     it('should delete an exercise', async () => {
       exerciseRepository.findById.mockResolvedValue(mockExercise);
-      exerciseRepository.delete.mockResolvedValue(undefined);
+      exerciseRepository.delete.mockResolvedValue(true);
 
       await service.deleteExercise('exercise_123');
 
@@ -281,7 +281,7 @@ describe('ExercisesService', () => {
 
       patientRepository.findByIdForUser.mockResolvedValue(null);
 
-      await expect(service.assignExercise('1', dto as any)).rejects.toThrow(PatientNotFoundException);
+      await expect(service.assignExercise('1', dto)).rejects.toThrow(PatientNotFoundException);
       expect(exerciseRepository.findById).not.toHaveBeenCalled();
     });
 
@@ -305,7 +305,7 @@ describe('ExercisesService', () => {
       patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
       exerciseRepository.findById.mockResolvedValue(null);
 
-      await expect(service.assignExercise('1', dto as any)).rejects.toThrow(ExerciseNotFoundException);
+      await expect(service.assignExercise('1', dto)).rejects.toThrow(ExerciseNotFoundException);
     });
   });
 
@@ -330,14 +330,14 @@ describe('ExercisesService', () => {
     it('should throw PatientExerciseNotFoundException when not found', async () => {
       patientExerciseRepository.findByIdForUser.mockResolvedValue(null);
 
-      await expect(service.updatePatientExercise('1', 'invalid_id', {} as any)).rejects.toThrow(PatientExerciseNotFoundException);
+      await expect(service.updatePatientExercise('1', 'invalid_id', {})).rejects.toThrow(PatientExerciseNotFoundException);
     });
   });
 
   describe('deletePatientExercise', () => {
     it('should delete a patient exercise', async () => {
       patientExerciseRepository.findByIdForUser.mockResolvedValue(mockPatientExercise);
-      patientExerciseRepository.deleteForUser.mockResolvedValue(undefined);
+      patientExerciseRepository.deleteForUser.mockResolvedValue(true);
 
       await service.deletePatientExercise('1', 'patient_exercise_123');
 

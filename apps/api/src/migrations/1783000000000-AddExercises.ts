@@ -23,7 +23,7 @@ export class AddExercises1783000000000 implements MigrationInterface {
         "id"          VARCHAR PRIMARY KEY,
         "patient_id"  VARCHAR NOT NULL,
         "exercise_id" VARCHAR NOT NULL,
-        "user_id"     INTEGER NOT NULL,
+        "user_id"     UUID NOT NULL,
         "status"      VARCHAR NOT NULL DEFAULT 'assigned',
         "notes"       TEXT,
         "sets"        INTEGER,
