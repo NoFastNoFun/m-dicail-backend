@@ -191,7 +191,7 @@ describe('ExercisesService', () => {
     it('should throw ExerciseNotFoundException when exercise not found', async () => {
       exerciseRepository.findById.mockResolvedValue(null);
 
-      await expect(service.updateExercise('invalid_id', {} as any)).rejects.toThrow(ExerciseNotFoundException);
+      await expect(service.updateExercise('invalid_id', {})).rejects.toThrow(ExerciseNotFoundException);
     });
   });
 
@@ -293,7 +293,7 @@ describe('ExercisesService', () => {
 
       patientRepository.findByIdForUser.mockResolvedValue(null);
 
-      await expect(service.assignExercise('2', dto as any)).rejects.toThrow(PatientNotFoundException);
+      await expect(service.assignExercise('2', dto)).rejects.toThrow(PatientNotFoundException);
     });
 
     it('should throw ExerciseNotFoundException when exercise not found', async () => {

@@ -62,7 +62,11 @@ export class ExercisesController {
   }
 
   @Put('assignments/:id')
-  updatePatientExercise(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: PatientExerciseUpdateRequestDto): Promise<PatientExerciseResponseDto> {
+  updatePatientExercise(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: PatientExerciseUpdateRequestDto,
+  ): Promise<PatientExerciseResponseDto> {
     return this.exercisesService.updatePatientExercise(userId, id, dto);
   }
 
