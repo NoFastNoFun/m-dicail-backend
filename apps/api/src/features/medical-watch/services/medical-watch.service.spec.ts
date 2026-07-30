@@ -46,11 +46,7 @@ describe('MedicalWatchService', () => {
     } as unknown as jest.Mocked<MedicalWatchRepository>;
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MedicalWatchService,
-        { provide: PubmedService, useValue: pubmedService },
-        { provide: MedicalWatchRepository, useValue: repository },
-      ],
+      providers: [MedicalWatchService, { provide: PubmedService, useValue: pubmedService }, { provide: MedicalWatchRepository, useValue: repository }],
     }).compile();
 
     service = module.get(MedicalWatchService);
