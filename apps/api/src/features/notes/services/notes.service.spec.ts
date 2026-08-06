@@ -1,11 +1,12 @@
 import { NotesService } from './notes.service';
 import { SoapClassifierService } from './soap-classifier.service';
+import { AnonymizationService } from './anonymization.service';
 
 describe('NotesService', () => {
   let service: NotesService;
 
   beforeEach(() => {
-    service = new NotesService(new SoapClassifierService());
+    service = new NotesService(new SoapClassifierService(), new AnonymizationService());
   });
 
   describe('process', () => {
@@ -32,6 +33,24 @@ describe('NotesService', () => {
         language: 'fr',
       });
       expect(result.soap_note.subjective).toContain('genou');
+      expect(result.soap_note.plan).toContain('séances de kinésithérapie');
+    });
+
+    it('anonymise le texte avant classification SOAP', () => {
+      const result = service.process({
+        session_id: 'abc',
+        raw_text:
+          "Madame Dupont, née le 14/03/1985, contactable au 06 12 34 56 78, se plaint de douleurs cervicales depuis 3 semaines. je prescris 10 séances de kinésithérapie.",
+        language: 'fr',
+      });
+
+    
+      expect(result.processed_text).not.toContain('Dupont');
+      expect(result.processed_text).not.toContain('14/03/1985');
+      expect(result.processed_text).not.toContain('06 12 34 56 78');
+
+     
+      expect(result.soap_note.subjective).toContain('douleurs cervicales');
       expect(result.soap_note.plan).toContain('séances de kinésithérapie');
     });
   });
