@@ -1,27 +1,37 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { JwtAuthGuard } from '@app/shared';
 import { AuthModule } from './features/auth/auth.module';
 import { UsersModule } from './features/users/users.module';
 import { PatientsModule } from './features/patients/patients.module';
+import { AppointmentsModule } from './features/appointments/appointments.module';
 import { SessionsModule } from './features/sessions/sessions.module';
 import { PubmedModule } from './features/pubmed/pubmed.module';
 import { NotesModule } from './features/notes/notes.module';
+import { MedicalWatchModule } from './features/medical-watch/medical-watch.module';
+import { HealthModule } from './features/health/health.module';
+import { ExercisesModule } from './features/exercises/exercises.module';
 
 @Module({
   imports: [
     AppConfigModule,
     DatabaseModule,
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    HealthModule,
     UsersModule,
     AuthModule,
     PatientsModule,
+    AppointmentsModule,
     SessionsModule,
     PubmedModule,
     NotesModule,
+    MedicalWatchModule,
+    ExercisesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
