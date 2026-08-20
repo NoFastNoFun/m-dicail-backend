@@ -43,6 +43,7 @@ describe('MedicalWatchService', () => {
     repository = {
       findAll: jest.fn(),
       upsertArticles: jest.fn(),
+      count: jest.fn().mockResolvedValue(1),
     } as unknown as jest.Mocked<MedicalWatchRepository>;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -54,6 +55,7 @@ describe('MedicalWatchService', () => {
     // Suppress logger output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
   });
 
   afterEach(() => {
@@ -188,6 +190,48 @@ describe('MedicalWatchService', () => {
       await expect(service.runManually()).resolves.not.toThrow();
 
       expect(Logger.prototype.error).toHaveBeenCalledTimes(4);
+    });
+
+    it('should skip upsert when PubMed returns no articles', async () => {
+      pubmedService.search.mockResolvedValue([]);
+
+      await service.runManually();
+
+      expect(pubmedService.search).toHaveBeenCalledTimes(4);
+      expect(repository.upsertArticles).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onModuleInit', () => {
+    it('should seed when the table is empty', async () => {
+      repository.count.mockResolvedValue(0);
+      pubmedService.search.mockResolvedValue([
+        {
+          pmid: '12345',
+          title: 'Test Article',
+          abstract: 'Test abstract',
+          authors: ['Author 1'],
+          publication_date: '2024-01-01',
+          doi: null,
+        },
+      ]);
+
+      await service.onModuleInit();
+      // Allow the fire-and-forget promise to settle
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(repository.count).toHaveBeenCalled();
+      expect(pubmedService.search).toHaveBeenCalled();
+    });
+
+    it('should not seed when articles already exist', async () => {
+      repository.count.mockResolvedValue(5);
+
+      await service.onModuleInit();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(repository.count).toHaveBeenCalled();
+      expect(pubmedService.search).not.toHaveBeenCalled();
     });
   });
 });

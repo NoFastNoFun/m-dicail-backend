@@ -4,14 +4,18 @@ import { parseStringPromise } from 'xml2js';
 import { ArticleResponseDto } from '../dtos/responses/article.response.dto';
 
 const NCBI_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
+const NCBI_TOOL = 'medicail';
+const NCBI_USER_AGENT = 'medicail/1.0';
 
 @Injectable()
 export class PubmedService {
   private readonly logger = new Logger(PubmedService.name);
   private readonly apiKey: string | undefined;
+  private readonly email: string | undefined;
 
   constructor(config: ConfigService) {
-    this.apiKey = config.get<string>('NCBI_API_KEY');
+    this.apiKey = config.get<string>('NCBI_API_KEY') || undefined;
+    this.email = config.get<string>('NCBI_EMAIL') || undefined;
   }
 
   async search(query: string, maxResults: number): Promise<ArticleResponseDto[]> {
@@ -23,15 +27,37 @@ export class PubmedService {
   private buildParams(base: Record<string, string | number>): URLSearchParams {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(base)) params.set(k, String(v));
+    params.set('tool', NCBI_TOOL);
+    if (this.email) params.set('email', this.email);
     if (this.apiKey) params.set('api_key', this.apiKey);
     return params;
   }
 
+  private async ncbiFetch(url: string): Promise<Response> {
+    return fetch(url, {
+      headers: {
+        'User-Agent': NCBI_USER_AGENT,
+      },
+    });
+  }
+
   private async esearch(query: string, maxResults: number): Promise<string[]> {
     const params = this.buildParams({ db: 'pubmed', term: query, retmax: maxResults, retmode: 'json' });
-    const res = await fetch(`${NCBI_BASE_URL}/esearch.fcgi?${params}`);
-    if (!res.ok) throw new BadGatewayException('NCBI esearch error');
-    const data = (await res.json()) as { esearchresult?: { idlist?: string[] } };
+    const res = await this.ncbiFetch(`${NCBI_BASE_URL}/esearch.fcgi?${params}`);
+    if (!res.ok) {
+      throw new BadGatewayException(`NCBI esearch error (${res.status})`);
+    }
+
+    const data = (await res.json()) as {
+      esearchresult?: { idlist?: string[]; ERROR?: string; error?: string };
+      error?: string;
+    };
+
+    const ncbiError = data.esearchresult?.ERROR ?? data.esearchresult?.error ?? data.error;
+    if (ncbiError) {
+      throw new BadGatewayException(`NCBI esearch error: ${ncbiError}`);
+    }
+
     const pmids = data.esearchresult?.idlist ?? [];
     this.logger.log(`ESearch returned ${pmids.length} PMIDs for query: "${query}"`);
     return pmids;
@@ -44,8 +70,10 @@ export class PubmedService {
       rettype: 'abstract',
       retmode: 'xml',
     });
-    const res = await fetch(`${NCBI_BASE_URL}/efetch.fcgi?${params}`);
-    if (!res.ok) throw new BadGatewayException('NCBI efetch error');
+    const res = await this.ncbiFetch(`${NCBI_BASE_URL}/efetch.fcgi?${params}`);
+    if (!res.ok) {
+      throw new BadGatewayException(`NCBI efetch error (${res.status})`);
+    }
     return this.parseArticles(await res.text());
   }
 
@@ -58,7 +86,8 @@ export class PubmedService {
       return [];
     }
 
-    const pubmedArticles: unknown[] = (root as { PubmedArticleSet?: { PubmedArticle?: unknown[] } })?.PubmedArticleSet?.PubmedArticle ?? [];
+    const pubmedArticles: unknown[] =
+      (root as { PubmedArticleSet?: { PubmedArticle?: unknown[] } })?.PubmedArticleSet?.PubmedArticle ?? [];
 
     const articles: ArticleResponseDto[] = [];
     for (const node of pubmedArticles) {

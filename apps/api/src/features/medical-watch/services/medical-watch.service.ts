@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
@@ -13,13 +13,17 @@ const WATCH_QUERIES: Record<MedicalWatchSpecialty, string> = {
 };
 
 @Injectable()
-export class MedicalWatchService {
+export class MedicalWatchService implements OnModuleInit {
   private readonly logger = new Logger(MedicalWatchService.name);
 
   constructor(
     private readonly pubmedService: PubmedService,
     private readonly repository: MedicalWatchRepository,
   ) {}
+
+  onModuleInit(): void {
+    void this.seedIfEmpty();
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'Europe/Paris' })
   async runDailyWatch(): Promise<void> {
@@ -41,10 +45,25 @@ export class MedicalWatchService {
     return articles.map((a) => new MedicalWatchArticleResponseDto(a));
   }
 
+  private async seedIfEmpty(): Promise<void> {
+    try {
+      const count = await this.repository.count();
+      if (count > 0) return;
+      this.logger.log('Medical watch table empty — seeding from PubMed...');
+      await this.runManually();
+    } catch (err) {
+      this.logger.error(`Failed to seed medical watch on startup: ${err}`);
+    }
+  }
+
   private async fetchAndStore(specialty: MedicalWatchSpecialty): Promise<void> {
     const query = WATCH_QUERIES[specialty];
     try {
       const articles = await this.pubmedService.search(query, 10);
+      if (articles.length === 0) {
+        this.logger.warn(`No articles returned for specialty: "${specialty}"`);
+        return;
+      }
       const entities = articles.map((a) => ({
         pmid: a.pmid,
         specialty,

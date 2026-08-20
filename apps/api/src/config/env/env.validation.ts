@@ -20,6 +20,10 @@ class EnvironmentVariables {
   declare NCBI_API_KEY?: string;
 
   @IsString()
+  @IsOptional()
+  declare NCBI_EMAIL?: string;
+
+  @IsString()
   @IsNotEmpty()
   declare ACCESS_TOKEN_TTL: string;
 

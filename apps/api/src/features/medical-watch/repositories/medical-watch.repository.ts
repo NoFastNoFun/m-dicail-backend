@@ -9,7 +9,12 @@ export class MedicalWatchRepository {
   constructor(@InjectRepository(MedicalWatchArticle) private readonly repo: Repository<MedicalWatchArticle>) {}
 
   async upsertArticles(articles: Partial<MedicalWatchArticle>[]): Promise<void> {
+    if (articles.length === 0) return;
     await this.repo.upsert(articles, { conflictPaths: ['pmid'], skipUpdateIfNoValuesChanged: true });
+  }
+
+  count(): Promise<number> {
+    return this.repo.count();
   }
 
   findAll(specialty?: MedicalWatchSpecialty, limit = 50): Promise<MedicalWatchArticle[]> {
