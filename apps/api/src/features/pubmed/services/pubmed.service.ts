@@ -86,8 +86,7 @@ export class PubmedService {
       return [];
     }
 
-    const pubmedArticles: unknown[] =
-      (root as { PubmedArticleSet?: { PubmedArticle?: unknown[] } })?.PubmedArticleSet?.PubmedArticle ?? [];
+    const pubmedArticles: unknown[] = (root as { PubmedArticleSet?: { PubmedArticle?: unknown[] } })?.PubmedArticleSet?.PubmedArticle ?? [];
 
     const articles: ArticleResponseDto[] = [];
     for (const node of pubmedArticles) {
