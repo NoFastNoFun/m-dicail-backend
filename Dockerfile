@@ -4,10 +4,10 @@ WORKDIR /app
 ARG APP=api
 ENV HUSKY=0
 
-# Pin to packageManager in package.json — avoid pnpm@latest (extra registry lookup, flaky).
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable \
-  && corepack prepare pnpm@9.15.0 --activate \
+# Use npm (bundled with the image) to install a pinned pnpm — avoids Corepack's
+# separate download path, which failed on the VPS when Docker egress was filtered.
+RUN npm install -g pnpm@9.15.0 --fetch-retries=5 --fetch-retry-maxtimeout=60000 \
   && pnpm install --frozen-lockfile
 
 COPY . .
@@ -22,8 +22,7 @@ ENV APP=${APP}
 ENV HUSKY=0
 
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable \
-  && corepack prepare pnpm@9.15.0 --activate \
+RUN npm install -g pnpm@9.15.0 --fetch-retries=5 --fetch-retry-maxtimeout=60000 \
   && pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
