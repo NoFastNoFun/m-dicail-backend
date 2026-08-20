@@ -2,12 +2,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 ARG APP=api
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-COPY package.json pnpm-lock.yaml ./
 ENV HUSKY=0
-RUN pnpm install --frozen-lockfile
+
+# Pin to packageManager in package.json — avoid pnpm@latest (extra registry lookup, flaky).
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable \
+  && corepack prepare pnpm@9.15.0 --activate \
+  && pnpm install --frozen-lockfile
 
 COPY . .
 RUN pnpm nest build ${APP}
@@ -20,10 +21,10 @@ ARG APP=api
 ENV APP=${APP}
 ENV HUSKY=0
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+RUN corepack enable \
+  && corepack prepare pnpm@9.15.0 --activate \
+  && pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
 
