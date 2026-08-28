@@ -39,6 +39,12 @@ export class RecordingSession {
   @Column({ name: 'summary', type: 'text', nullable: true })
   declare summary: string | null;
 
+  @Column({ name: 'template_id', type: 'varchar', nullable: true })
+  declare templateId: string | null;
+
+  @Column({ name: 'template_name', type: 'varchar', nullable: true })
+  declare templateName: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
 

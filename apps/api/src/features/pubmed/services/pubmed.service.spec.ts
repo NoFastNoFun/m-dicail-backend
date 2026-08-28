@@ -158,6 +158,74 @@ describe('PubmedService', () => {
     expect(result).toEqual([]);
   });
 
+  it('filters disease descriptors from MeSH esummary', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['68008200'] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          result: {
+            uids: ['68008200'],
+            '68008200': {
+              ds_meshui: 'D017116',
+              ds_meshname: 'Low Back Pain',
+              ds_treenumbers: 'C05.116',
+            },
+          },
+        }),
+      });
+
+    const result = await service.searchMesh('low back pain', 5);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      mesh_ui: 'D017116',
+      term: 'Low Back Pain',
+      synonyms: [],
+      tree_numbers: ['C05.116'],
+    });
+  });
+
+  it('falls back to PubMed article MeSH headings when MeSH search is empty', async () => {
+    const meshXml = `<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>1</PMID>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D017116">Low Back Pain</DescriptorName>
+          <QualifierName MajorTopicYN="N">rehabilitation</QualifierName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>`;
+
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: [] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['1'] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => meshXml,
+      });
+
+    const result = await service.searchMesh('lombalgie', 5);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].term).toBe('Low Back Pain');
+    expect(result[0].mesh_ui).toBe('D017116');
+  });
+
   it('parses abstract sections with labels and authors without forename', async () => {
     const richXml = `<?xml version="1.0"?>
 <PubmedArticleSet>

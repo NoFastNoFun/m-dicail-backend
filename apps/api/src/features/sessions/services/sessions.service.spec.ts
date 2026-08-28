@@ -22,6 +22,8 @@ describe('SessionsService', () => {
     transcript: 'Hello',
     soapNote: null,
     summary: null,
+    templateId: null,
+    templateName: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -112,6 +114,24 @@ describe('SessionsService', () => {
       expect(result.soap_note).toEqual({ subjective: 'pain' });
       expect(result.patient_id).toBe('patient_new');
       expect(result.transcript).toBe('Updated transcript');
+    });
+
+    it('updates template_id and template_name', async () => {
+      const updated = {
+        ...mockSession,
+        templateId: 'builtin_low_back_pain',
+        templateName: 'Lombalgie',
+      };
+      repository.findByIdForUser.mockResolvedValue(mockSession);
+      repository.save.mockResolvedValue(updated);
+
+      const result = await service.update(userId, mockSession.id, {
+        template_id: 'builtin_low_back_pain',
+        template_name: 'Lombalgie',
+      });
+
+      expect(result.template_id).toBe('builtin_low_back_pain');
+      expect(result.template_name).toBe('Lombalgie');
     });
 
     it('throws SessionNotFoundException when session does not exist', async () => {
