@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public, CurrentUser, Roles, RolesGuard, UserRole } from '@app/shared';
@@ -49,6 +39,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   register(@Body() dto: RegisterRequestDto): Promise<AuthResponseDto> {
     return this.authService.register(dto);
   }
@@ -56,6 +47,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   login(@Body() dto: LoginRequestDto): Promise<LoginResponseDto> {
     return this.authService.login(dto);
   }
@@ -63,6 +55,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   refresh(@Body() dto: RefreshRequestDto): Promise<AuthResponseDto> {
     return this.authService.refresh(dto);
   }
@@ -96,12 +89,13 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   confirmRecovery(@Body() dto: AccountRecoveryConfirmRequestDto): Promise<void> {
-    return this.authService.confirmAccountRecovery(dto.token);
+    return this.authService.confirmAccountRecovery(dto.token, dto.password);
   }
 
   @Public()
   @Post('mfa/verify')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   verifyMfa(@Body() dto: MfaVerifyRequestDto): Promise<AuthResponseDto> {
     return this.authService.verifyMfa(dto.mfaToken, dto.code);
   }
@@ -135,15 +129,12 @@ export class AuthController {
   @Post('passkeys/register/verify')
   @HttpCode(HttpStatus.NO_CONTENT)
   passkeyRegisterVerify(@CurrentUser('id') userId: string, @Body() dto: PasskeyRegisterVerifyRequestDto): Promise<void> {
-    return this.passkeysService.verifyRegistration(
-      userId,
-      dto.response as unknown as RegistrationResponseJSON,
-      dto.deviceName,
-    );
+    return this.passkeysService.verifyRegistration(userId, dto.response as unknown as RegistrationResponseJSON, dto.deviceName);
   }
 
   @Public()
   @Post('passkeys/authenticate/options')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   passkeyAuthenticateOptions(@Body() dto: PasskeyAuthenticateOptionsRequestDto) {
     const mfaUserId = dto.mfaToken ? this.authService.verifyMfaToken(dto.mfaToken) : undefined;
     return this.passkeysService.getAuthenticationOptions(dto.email, mfaUserId);
@@ -152,13 +143,10 @@ export class AuthController {
   @Public()
   @Post('passkeys/authenticate/verify')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async passkeyAuthenticateVerify(@Body() dto: PasskeyAuthenticateVerifyRequestDto): Promise<AuthResponseDto> {
     const mfaUserId = dto.mfaToken ? this.authService.verifyMfaToken(dto.mfaToken) : undefined;
-    const userId = await this.passkeysService.verifyAuthentication(
-      dto.response as unknown as AuthenticationResponseJSON,
-      dto.email,
-      mfaUserId,
-    );
+    const userId = await this.passkeysService.verifyAuthentication(dto.response as unknown as AuthenticationResponseJSON, dto.email, mfaUserId);
     return this.authService.completePasskeyLogin(userId);
   }
 
@@ -192,7 +180,7 @@ export class AuthController {
   @Roles(UserRole.PRATICIEN)
   @UseGuards(RolesGuard)
   @Post('patients')
-  createPatientAccount(@Body() dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
-    return this.authService.createPatientAccount(dto);
+  createPatientAccount(@CurrentUser('id') userId: string, @Body() dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
+    return this.authService.createPatientAccount(userId, dto);
   }
 }

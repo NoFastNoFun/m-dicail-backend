@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class PasskeyAuthenticateOptionsRequestDto {
   @ApiProperty({ required: false })
@@ -38,11 +38,4 @@ export class PasskeyAuthenticateVerifyRequestDto {
   @IsOptional()
   @IsString()
   declare mfaToken?: string;
-}
-
-export class PasskeyEmailRequestDto {
-  @ApiProperty()
-  @IsEmail()
-  @IsNotEmpty()
-  declare email: string;
 }

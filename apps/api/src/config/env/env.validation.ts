@@ -1,5 +1,7 @@
 import { plainToInstance } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
+
+const PRODUCTION_REQUIRED_KEYS = ['APP_PUBLIC_URL', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'WEBAUTHN_RP_ID', 'WEBAUTHN_ORIGIN'] as const;
 
 class EnvironmentVariables {
   @IsInt()
@@ -9,6 +11,7 @@ class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(32)
   declare SECRET_KEY: string;
 
   @IsString()
@@ -59,6 +62,18 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  declare CORS_ORIGINS?: string;
+
+  @IsString()
+  @IsOptional()
+  declare REGISTRATION_INVITE_CODE?: string;
+
+  @IsString()
+  @IsOptional()
+  declare ENABLE_SWAGGER?: string;
+
+  @IsString()
+  @IsOptional()
   declare WEBAUTHN_RP_ID?: string;
 
   @IsString()
@@ -78,5 +93,13 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
   if (errors.length > 0) {
     throw new Error(errors.toString());
   }
+
+  if (process.env.NODE_ENV === 'production') {
+    const missing = PRODUCTION_REQUIRED_KEYS.filter((key) => !validated[key]);
+    if (missing.length > 0) {
+      throw new Error(`Production env missing: ${missing.join(', ')}`);
+    }
+  }
+
   return validated;
 }

@@ -44,7 +44,25 @@ export class AuthTokenService {
     const valid = await argon2.verify(record.hashedToken, secret);
     if (!valid) throw new BadRequestException('Jeton invalide');
 
-    await this.authTokenRepository.save({ ...record, usedAt: new Date() });
+    const consumed = await this.authTokenRepository.markUsedIfUnused(record.id);
+    if (!consumed) throw new BadRequestException('Jeton deja utilise');
+    return record.userId;
+  }
+
+  async peekToken(token: string, type: AuthTokenType): Promise<string> {
+    const separatorIndex = token.indexOf('.');
+    if (separatorIndex === -1) throw new BadRequestException('Jeton invalide');
+
+    const tokenId = token.slice(0, separatorIndex);
+    const secret = token.slice(separatorIndex + 1);
+
+    const record = await this.authTokenRepository.findById(tokenId);
+    if (!record || record.type !== type) throw new BadRequestException('Jeton invalide');
+    if (record.usedAt) throw new BadRequestException('Jeton deja utilise');
+    if (record.expiresAt.getTime() < Date.now()) throw new UnauthorizedException('Jeton expire');
+
+    const valid = await argon2.verify(record.hashedToken, secret);
+    if (!valid) throw new BadRequestException('Jeton invalide');
     return record.userId;
   }
 

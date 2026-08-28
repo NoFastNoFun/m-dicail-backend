@@ -65,7 +65,7 @@ export class MfaService {
 
   async verifyTotpOrRecovery(userId: string, code: string): Promise<boolean> {
     const user = await this.usersService.findById(userId);
-    if (!user?.mfaEnabled) return true;
+    if (!user?.mfaEnabled) return false;
     return this.verifyCodeForUser(user, code);
   }
 
@@ -85,8 +85,8 @@ export class MfaService {
       if (stored.usedAt) continue;
       const match = await argon2.verify(stored.hashedCode, code.trim());
       if (match) {
-        await this.recoveryCodeRepository.save({ ...stored, usedAt: new Date() });
-        return true;
+        const consumed = await this.recoveryCodeRepository.markUsedIfUnused(stored.id);
+        if (consumed) return true;
       }
     }
 

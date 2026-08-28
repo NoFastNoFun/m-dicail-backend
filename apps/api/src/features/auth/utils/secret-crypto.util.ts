@@ -18,6 +18,10 @@ export function encryptSecret(plaintext: string, secretKey: string): string {
 
 export function decryptSecret(ciphertext: string, secretKey: string): string {
   const buf = Buffer.from(ciphertext, 'base64');
+  if (buf.length < IV_LENGTH + TAG_LENGTH + 1) {
+    throw new Error('Invalid ciphertext');
+  }
+
   const iv = buf.subarray(0, IV_LENGTH);
   const tag = buf.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
   const encrypted = buf.subarray(IV_LENGTH + TAG_LENGTH);

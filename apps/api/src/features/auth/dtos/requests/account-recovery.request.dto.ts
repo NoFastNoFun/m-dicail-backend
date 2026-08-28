@@ -12,4 +12,9 @@ export class AccountRecoveryConfirmRequestDto {
   @IsString()
   @IsNotEmpty()
   declare token: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  declare password: string;
 }

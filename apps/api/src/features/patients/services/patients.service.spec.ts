@@ -30,7 +30,6 @@ describe('PatientsService', () => {
     repository = {
       findAllForUser: jest.fn(),
       findByIdForUser: jest.fn(),
-      findById: jest.fn(),
       save: jest.fn(),
       deleteForUser: jest.fn(),
     } as unknown as jest.Mocked<PatientRepository>;
@@ -137,23 +136,6 @@ describe('PatientsService', () => {
       repository.findByIdForUser.mockResolvedValue(null);
 
       await expect(service.update(userId, 'missing', { mrn: 'MRN001', first_name: 'Jane', last_name: 'Doe' })).rejects.toThrow(PatientNotFoundException);
-    });
-  });
-
-  describe('findById', () => {
-    it('returns a patient when found', async () => {
-      repository.findById.mockResolvedValue(mockPatient);
-
-      const result = await service.findById(mockPatient.id);
-
-      expect(repository.findById).toHaveBeenCalledWith(mockPatient.id);
-      expect(result?.id).toBe(mockPatient.id);
-    });
-
-    it('returns null when patient does not exist', async () => {
-      repository.findById.mockResolvedValue(null);
-
-      await expect(service.findById('missing')).resolves.toBeNull();
     });
   });
 

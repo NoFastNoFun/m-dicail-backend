@@ -22,4 +22,15 @@ export class MfaRecoveryCodeRepository {
   async deleteAllForUser(userId: string): Promise<void> {
     await this.repo.delete({ userId });
   }
+
+  async markUsedIfUnused(id: string): Promise<boolean> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(MfaRecoveryCode)
+      .set({ usedAt: new Date() })
+      .where('id = :id', { id })
+      .andWhere('used_at IS NULL')
+      .execute();
+    return (result.affected ?? 0) === 1;
+  }
 }

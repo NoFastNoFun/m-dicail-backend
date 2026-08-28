@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -6,6 +6,7 @@ import * as argon2 from 'argon2';
 import { UserRole } from '@app/shared';
 import { UsersService } from '@features/users/services/users.service';
 import { PatientsService } from '@features/patients/services/patients.service';
+import { PatientNotFoundException } from '@features/patients/exceptions/patient-not-found.exception';
 import { User } from '@features/users/entities/user.entity';
 import { MailService } from '../../mail/services/mail.service';
 import { AuthService } from './auth.service';
@@ -25,6 +26,9 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
   let passkeysService: jest.Mocked<PasskeysService>;
+  let mailService: { sendMail: jest.Mock; getPublicAppUrl: jest.Mock };
+  let authTokenService: { createToken: jest.Mock; consumeToken: jest.Mock; peekToken: jest.Mock };
+  let mfaService: { verifyTotpOrRecovery: jest.Mock; disableMfaForRecovery: jest.Mock };
 
   const mockUser: User = {
     id: 'user-1',
@@ -51,10 +55,11 @@ describe('AuthService', () => {
       updatePassword: jest.fn(),
       updateMfa: jest.fn(),
       updateDigestOptIn: jest.fn(),
+      countByRole: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
 
     patientsService = {
-      findById: jest.fn(),
+      getOne: jest.fn(),
     } as unknown as jest.Mocked<PatientsService>;
 
     jwtService = {
@@ -71,17 +76,18 @@ describe('AuthService', () => {
       hasPasskeys: jest.fn().mockResolvedValue(false),
     } as unknown as jest.Mocked<PasskeysService>;
 
-    const mailService = {
+    mailService = {
       sendMail: jest.fn(),
       getPublicAppUrl: jest.fn().mockReturnValue('http://localhost:3000'),
     };
 
-    const authTokenService = {
+    authTokenService = {
       createToken: jest.fn(),
       consumeToken: jest.fn(),
+      peekToken: jest.fn(),
     };
 
-    const mfaService = {
+    mfaService = {
       verifyTotpOrRecovery: jest.fn(),
       disableMfaForRecovery: jest.fn(),
     };
@@ -111,9 +117,8 @@ describe('AuthService', () => {
   describe('register', () => {
     it('creates a user and returns an access token + refresh token', async () => {
       usersService.findByEmail.mockResolvedValue(null);
-      (argon2.hash as jest.Mock)
-        .mockResolvedValueOnce('new-password-hash')
-        .mockResolvedValueOnce('new-refresh-hash');
+      usersService.countByRole.mockResolvedValue(0);
+      (argon2.hash as jest.Mock).mockResolvedValueOnce('new-password-hash').mockResolvedValueOnce('new-refresh-hash');
       usersService.create.mockResolvedValue(mockUser);
 
       const result = await service.register({
@@ -127,6 +132,7 @@ describe('AuthService', () => {
         sub: 'user-1',
         email: 'test@example.com',
         role: UserRole.PRATICIEN,
+        purpose: 'access',
       });
       expect(result.status).toBe('authenticated');
       expect(result.user.email).toBe('test@example.com');
@@ -134,7 +140,14 @@ describe('AuthService', () => {
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
     });
 
+    it('throws ForbiddenException when a praticien already exists and no invite code is configured', async () => {
+      usersService.countByRole.mockResolvedValue(1);
+
+      await expect(service.register({ email: 'new@example.com', password: 'password123', fullName: 'New' })).rejects.toThrow(ForbiddenException);
+    });
+
     it('throws ConflictException when email already exists', async () => {
+      usersService.countByRole.mockResolvedValue(0);
       usersService.findByEmail.mockResolvedValue(mockUser);
 
       await expect(service.register({ email: 'test@example.com', password: 'password123', fullName: 'Test User' })).rejects.toThrow(ConflictException);
@@ -159,29 +172,30 @@ describe('AuthService', () => {
     };
 
     it('creates a patient account', async () => {
-      patientsService.findById.mockResolvedValue({ id: 'patient_1' } as never);
+      patientsService.getOne.mockResolvedValue({ id: 'patient_1' } as never);
       usersService.findByEmail.mockResolvedValue(null);
       (argon2.hash as jest.Mock).mockResolvedValue('new-hash');
       usersService.createPatientAccount.mockResolvedValue(patientUser);
 
-      const result = await service.createPatientAccount(dto);
+      const result = await service.createPatientAccount('user-1', dto);
 
+      expect(patientsService.getOne).toHaveBeenCalledWith('user-1', dto.patientId);
       expect(usersService.createPatientAccount).toHaveBeenCalledWith(dto.email, 'new-hash', dto.patientId, dto.fullName);
       expect(result.user.email).toBe(dto.email);
       expect(result.user.role).toBe(UserRole.PATIENT);
     });
 
     it('throws NotFoundException when patient does not exist', async () => {
-      patientsService.findById.mockResolvedValue(null);
+      patientsService.getOne.mockRejectedValue(new PatientNotFoundException(dto.patientId));
 
-      await expect(service.createPatientAccount(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.createPatientAccount('user-1', dto)).rejects.toThrow(PatientNotFoundException);
     });
 
     it('throws ConflictException when email already exists', async () => {
-      patientsService.findById.mockResolvedValue({ id: 'patient_1' } as never);
+      patientsService.getOne.mockResolvedValue({ id: 'patient_1' } as never);
       usersService.findByEmail.mockResolvedValue(mockUser);
 
-      await expect(service.createPatientAccount(dto)).rejects.toThrow(ConflictException);
+      await expect(service.createPatientAccount('user-1', dto)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -215,8 +229,10 @@ describe('AuthService', () => {
 
     it('throws UnauthorizedException when user is not found', async () => {
       usersService.findByEmail.mockResolvedValue(null);
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login({ email: 'test@example.com', password: 'password123' })).rejects.toThrow(UnauthorizedException);
+      expect(argon2.verify).toHaveBeenCalled();
     });
 
     it('throws UnauthorizedException when password is invalid', async () => {
@@ -240,6 +256,18 @@ describe('AuthService', () => {
 
     it('throws UnauthorizedException when the token has no separator', async () => {
       await expect(service.refresh({ refreshToken: 'not-a-valid-token' })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when the refresh token is missing', async () => {
+      usersService.findById.mockResolvedValue({ ...mockUser, hashedRefreshToken: null, refreshTokenExpiresAt: null });
+
+      await expect(service.refresh({ refreshToken: 'user-1.some-secret' })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when the refresh token is expired', async () => {
+      usersService.findById.mockResolvedValue({ ...mockUser, refreshTokenExpiresAt: new Date(Date.now() - 1000) });
+
+      await expect(service.refresh({ refreshToken: 'user-1.some-secret' })).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -265,6 +293,127 @@ describe('AuthService', () => {
       usersService.findById.mockResolvedValue(null);
 
       await expect(service.me('missing')).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('verifyMfa', () => {
+    it('issues tokens after a valid TOTP', async () => {
+      jwtService.verify.mockReturnValue({ sub: 'user-1', purpose: 'mfa' });
+      mfaService.verifyTotpOrRecovery.mockResolvedValue(true);
+      usersService.findById.mockResolvedValue(mockUser);
+
+      const result = await service.verifyMfa('mfa-token', '123456');
+
+      expect(result.status).toBe('authenticated');
+    });
+
+    it('rejects an invalid code', async () => {
+      jwtService.verify.mockReturnValue({ sub: 'user-1', purpose: 'mfa' });
+      mfaService.verifyTotpOrRecovery.mockResolvedValue(false);
+
+      await expect(service.verifyMfa('mfa-token', '000000')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rejects when the user disappeared after MFA', async () => {
+      jwtService.verify.mockReturnValue({ sub: 'user-1', purpose: 'mfa' });
+      mfaService.verifyTotpOrRecovery.mockResolvedValue(true);
+      usersService.findById.mockResolvedValue(null);
+
+      await expect(service.verifyMfa('mfa-token', '123456')).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  it('completePasskeyLogin rejects a missing user', async () => {
+    usersService.findById.mockResolvedValue(null);
+    await expect(service.completePasskeyLogin('missing')).rejects.toThrow(UnauthorizedException);
+  });
+
+  describe('password reset and recovery', () => {
+    it('skips mail when the email is unknown', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+
+      await service.forgotPassword('missing@example.com');
+
+      expect(authTokenService.createToken).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('sends a reset mail for a known user', async () => {
+      usersService.findByEmail.mockResolvedValue(mockUser);
+      authTokenService.createToken.mockResolvedValue({ token: 'token-1.secret' });
+
+      await service.forgotPassword('test@example.com');
+
+      expect(mailService.sendMail).toHaveBeenCalled();
+    });
+
+    it('requestAccountRecovery sends mail for a known user', async () => {
+      usersService.findByEmail.mockResolvedValue(mockUser);
+      authTokenService.createToken.mockResolvedValue({ token: 'token-1.secret' });
+
+      await service.requestAccountRecovery('test@example.com');
+
+      expect(mailService.sendMail).toHaveBeenCalled();
+    });
+
+    it('resetPassword updates the hash and clears refresh tokens', async () => {
+      authTokenService.consumeToken.mockResolvedValue('user-1');
+      (argon2.hash as jest.Mock).mockResolvedValue('new-password-hash');
+
+      await service.resetPassword('token-1.secret', 'Newpass1*');
+
+      expect(usersService.updatePassword).toHaveBeenCalledWith('user-1', 'new-password-hash');
+      expect(usersService.updateRefreshToken).toHaveBeenCalledWith('user-1', null, null);
+    });
+
+    it('confirmAccountRecovery requires the current password', async () => {
+      authTokenService.peekToken.mockResolvedValue('user-1');
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      authTokenService.consumeToken.mockResolvedValue('user-1');
+
+      await service.confirmAccountRecovery('token-1.secret', 'password123');
+
+      expect(mfaService.disableMfaForRecovery).toHaveBeenCalledWith('user-1');
+    });
+
+    it('confirmAccountRecovery rejects a wrong password without consuming the token', async () => {
+      authTokenService.peekToken.mockResolvedValue('user-1');
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.confirmAccountRecovery('token-1.secret', 'wrong')).rejects.toThrow(UnauthorizedException);
+      expect(authTokenService.consumeToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('registration invite', () => {
+    it('accepts a matching invite code when configured', async () => {
+      configService.get.mockReturnValue('invite-me');
+      usersService.findByEmail.mockResolvedValue(null);
+      (argon2.hash as jest.Mock).mockResolvedValueOnce('new-password-hash').mockResolvedValueOnce('new-refresh-hash');
+      usersService.create.mockResolvedValue(mockUser);
+
+      await service.register({
+        email: 'new@example.com',
+        password: 'password123',
+        fullName: 'New',
+        inviteCode: 'invite-me',
+      });
+
+      expect(usersService.create).toHaveBeenCalled();
+    });
+
+    it('rejects a mismatched invite code', async () => {
+      configService.get.mockReturnValue('invite-me');
+
+      await expect(
+        service.register({
+          email: 'new@example.com',
+          password: 'password123',
+          inviteCode: 'wrong',
+        }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

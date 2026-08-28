@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
+import { UserRole } from '@app/shared';
 import { UsersService } from '@features/users/services/users.service';
 import { PatientsService } from '@features/patients/services/patients.service';
 import { User } from '@features/users/entities/user.entity';
@@ -13,15 +14,10 @@ import { RegisterRequestDto } from '../dtos/requests/register.request.dto';
 import { LoginRequestDto } from '../dtos/requests/login.request.dto';
 import { RefreshRequestDto } from '../dtos/requests/refresh.request.dto';
 import { CreatePatientAccountRequestDto } from '../dtos/requests/create-patient-account.request.dto';
-import {
-  AuthResponseDto,
-  CreatePatientResponseDto,
-  LoginResponseDto,
-  MfaRequiredResponseDto,
-  UserResponseDto,
-} from '../dtos/responses/auth.response.dto';
+import { AuthResponseDto, CreatePatientResponseDto, LoginResponseDto, MfaRequiredResponseDto, UserResponseDto } from '../dtos/responses/auth.response.dto';
 import { AuthTokenType } from '../enums/auth-token-type.enum';
 import { MfaMethod } from '../enums/mfa-method.enum';
+import { timingSafeStringEqual } from '../utils/timing-safe-equal.util';
 import { AuthTokenService } from './auth-token.service';
 import { MfaService } from './mfa.service';
 import { PasskeysService } from './passkeys.service';
@@ -30,6 +26,8 @@ interface MfaJwtPayload {
   sub: string;
   purpose: 'mfa';
 }
+
+const DUMMY_PASSWORD_HASH = '$argon2id$v=19$m=65536,t=3,p=4$8aGOKFdYyhteMkxdv4E7zQ$tbpd2QVmEbOAL62yYfcZbtjJUQvvUzqCoOX/J2A2pcI';
 
 @Injectable()
 export class AuthService {
@@ -45,6 +43,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterRequestDto): Promise<AuthResponseDto> {
+    await this.assertRegistrationAllowed(dto.inviteCode);
+
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email deja utilise');
 
@@ -54,9 +54,8 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
-  async createPatientAccount(dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
-    const patientExists = await this.patientsService.findById(dto.patientId);
-    if (!patientExists) throw new NotFoundException(`Patient ${dto.patientId} introuvable`);
+  async createPatientAccount(praticienId: string, dto: CreatePatientAccountRequestDto): Promise<CreatePatientResponseDto> {
+    await this.patientsService.getOne(praticienId, dto.patientId);
 
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email deja utilise');
@@ -69,10 +68,9 @@ export class AuthService {
 
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user) throw new UnauthorizedException('Email ou mot de passe incorrect');
-
-    const valid = await argon2.verify(user.hashedPassword, dto.password);
-    if (!valid) throw new UnauthorizedException('Email ou mot de passe incorrect');
+    const hash = user?.hashedPassword ?? DUMMY_PASSWORD_HASH;
+    const valid = await argon2.verify(hash, dto.password).catch(() => false);
+    if (!user || !valid) throw new UnauthorizedException('Email ou mot de passe incorrect');
 
     if (user.mfaEnabled) {
       return this.buildMfaChallenge(user.id);
@@ -157,8 +155,15 @@ export class AuthService {
     await this.mailService.sendMail(user.email, emailContent.subject, emailContent.html);
   }
 
-  async confirmAccountRecovery(token: string): Promise<void> {
-    const userId = await this.authTokenService.consumeToken(token, AuthTokenType.ACCOUNT_RECOVERY);
+  async confirmAccountRecovery(token: string, password: string): Promise<void> {
+    const userId = await this.authTokenService.peekToken(token, AuthTokenType.ACCOUNT_RECOVERY);
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Utilisateur introuvable');
+
+    const valid = await argon2.verify(user.hashedPassword, password).catch(() => false);
+    if (!valid) throw new UnauthorizedException('Mot de passe incorrect');
+
+    await this.authTokenService.consumeToken(token, AuthTokenType.ACCOUNT_RECOVERY);
     await this.mfaService.disableMfaForRecovery(userId);
   }
 
@@ -171,6 +176,21 @@ export class AuthService {
       return payload.sub;
     } catch {
       throw new UnauthorizedException('Jeton MFA invalide ou expire');
+    }
+  }
+
+  private async assertRegistrationAllowed(inviteCode?: string): Promise<void> {
+    const expectedCode = this.configService.get<string>('REGISTRATION_INVITE_CODE');
+    if (expectedCode) {
+      if (!inviteCode || !timingSafeStringEqual(inviteCode, expectedCode)) {
+        throw new ForbiddenException("Code d'inscription invalide");
+      }
+      return;
+    }
+
+    const praticienCount = await this.usersService.countByRole(UserRole.PRATICIEN);
+    if (praticienCount > 0) {
+      throw new ForbiddenException('Inscription fermee');
     }
   }
 
@@ -189,6 +209,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      purpose: 'access',
     });
 
     const secret = randomBytes(64).toString('hex');

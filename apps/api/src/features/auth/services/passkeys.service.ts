@@ -1,11 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  generateAuthenticationOptions,
-  generateRegistrationOptions,
-  verifyAuthenticationResponse,
-  verifyRegistrationResponse,
-} from '@simplewebauthn/server';
+import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
 import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
@@ -59,6 +54,9 @@ export class PasskeysService {
       throw new BadRequestException('Challenge expire ou introuvable');
     }
 
+    const consumed = await this.challengeRepository.deleteById(challengeRecord.id);
+    if (!consumed) throw new BadRequestException('Challenge expire ou introuvable');
+
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: challengeRecord.challenge,
@@ -85,7 +83,7 @@ export class PasskeysService {
 
     if (!userId && email) {
       const user = await this.usersService.findByEmail(email);
-      if (!user) throw new NotFoundException('Utilisateur introuvable');
+      if (!user) throw new UnauthorizedException('Authentification passkey echouee');
       userId = user.id;
     }
 
@@ -106,11 +104,7 @@ export class PasskeysService {
     return options;
   }
 
-  async verifyAuthentication(
-    response: AuthenticationResponseJSON,
-    email?: string,
-    mfaUserId?: string,
-  ): Promise<string> {
+  async verifyAuthentication(response: AuthenticationResponseJSON, email?: string, mfaUserId?: string): Promise<string> {
     let userId = mfaUserId ?? null;
 
     if (!userId && email) {
@@ -130,6 +124,9 @@ export class PasskeysService {
     if (!challengeRecord || challengeRecord.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException('Challenge expire ou introuvable');
     }
+
+    const consumed = await this.challengeRepository.deleteById(challengeRecord.id);
+    if (!consumed) throw new BadRequestException('Challenge expire ou introuvable');
 
     const verification = await verifyAuthenticationResponse({
       response,

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -32,6 +32,9 @@ export class MailService {
 
   async sendMail(to: string, subject: string, html: string): Promise<void> {
     if (!this.enabled || !this.transporter) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new ServiceUnavailableException('Mail service unavailable');
+      }
       this.logger.debug(`Mail skipped (SMTP disabled): to=${to} subject=${subject}`);
       return;
     }

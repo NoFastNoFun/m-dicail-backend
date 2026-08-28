@@ -28,6 +28,8 @@ describe('UsersService', () => {
       findByEmail: jest.fn(),
       findById: jest.fn(),
       save: jest.fn(),
+      countByRole: jest.fn(),
+      findDigestOptInUsers: jest.fn(),
     } as unknown as jest.Mocked<UserRepository>;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -40,7 +42,7 @@ describe('UsersService', () => {
   it('findByEmail delegates to repository', async () => {
     repository.findByEmail.mockResolvedValue(mockUser);
 
-    const result = await service.findByEmail('test@example.com');
+    const result = await service.findByEmail('Test@Example.com');
 
     expect(repository.findByEmail).toHaveBeenCalledWith('test@example.com');
     expect(result).toBe(mockUser);
@@ -116,5 +118,42 @@ describe('UsersService', () => {
       patientId: 'patient_1',
     });
     expect(result).toBe(patientUser);
+  });
+
+  it('createPatientAccount sets fullName to null when omitted', async () => {
+    repository.save.mockResolvedValue({ ...mockUser, role: UserRole.PATIENT, fullName: null, patientId: 'patient_1' });
+
+    await service.createPatientAccount('patient@example.com', 'hashed', 'patient_1');
+
+    expect(repository.save).toHaveBeenCalledWith({
+      email: 'patient@example.com',
+      hashedPassword: 'hashed',
+      fullName: null,
+      role: UserRole.PATIENT,
+      patientId: 'patient_1',
+    });
+  });
+
+  it('countByRole delegates to repository', async () => {
+    repository.countByRole.mockResolvedValue(2);
+
+    await expect(service.countByRole(UserRole.PRATICIEN)).resolves.toBe(2);
+  });
+
+  it('findDigestOptInUsers delegates to repository', async () => {
+    repository.findDigestOptInUsers.mockResolvedValue([mockUser]);
+    await expect(service.findDigestOptInUsers()).resolves.toEqual([mockUser]);
+  });
+
+  it('updatePassword, updateMfa and updateDigestOptIn persist partial rows', async () => {
+    repository.save.mockResolvedValue(mockUser);
+
+    await service.updatePassword('user-1', 'new-hash');
+    await service.updateMfa('user-1', { mfaEnabled: true, totpSecret: 'enc' });
+    await service.updateDigestOptIn('user-1', true);
+
+    expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', hashedPassword: 'new-hash' });
+    expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', mfaEnabled: true, totpSecret: 'enc' });
+    expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', medicalWatchDigestOptIn: true });
   });
 });

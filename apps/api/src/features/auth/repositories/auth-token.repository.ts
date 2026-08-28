@@ -12,18 +12,23 @@ export class AuthTokenRepository {
     return this.repo.save(token);
   }
 
-  findValidByType(userId: string, type: AuthTokenType): Promise<AuthToken[]> {
-    return this.repo.find({
-      where: { userId, type },
-      order: { createdAt: 'DESC' },
-    });
-  }
-
   findById(id: string): Promise<AuthToken | null> {
     return this.repo.findOne({ where: { id } });
   }
 
   async invalidateAllForUser(userId: string, type: AuthTokenType): Promise<void> {
     await this.repo.update({ userId, type, usedAt: IsNull() }, { usedAt: new Date() });
+  }
+
+  async markUsedIfUnused(id: string): Promise<boolean> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(AuthToken)
+      .set({ usedAt: new Date() })
+      .where('id = :id', { id })
+      .andWhere('used_at IS NULL')
+      .andWhere('expires_at > :now', { now: new Date() })
+      .execute();
+    return (result.affected ?? 0) === 1;
   }
 }

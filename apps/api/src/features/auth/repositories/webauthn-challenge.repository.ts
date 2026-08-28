@@ -18,14 +18,12 @@ export class WebAuthnChallengeRepository {
     });
   }
 
-  findLatestByChallenge(challenge: string): Promise<WebAuthnChallenge | null> {
-    return this.repo.findOne({
-      where: { challenge },
-      order: { createdAt: 'DESC' },
-    });
-  }
-
   async deleteExpired(): Promise<void> {
     await this.repo.delete({ expiresAt: LessThan(new Date()) });
+  }
+
+  async deleteById(id: string): Promise<boolean> {
+    const result = await this.repo.delete({ id });
+    return (result.affected ?? 0) === 1;
   }
 }
