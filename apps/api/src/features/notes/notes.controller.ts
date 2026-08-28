@@ -1,5 +1,6 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Roles, RolesGuard, UserRole } from '@app/shared';
 import { NotesService } from './services/notes.service';
 import { NoteProcessRequestDto } from './dtos/requests/note-process.request.dto';
 import { NoteSummarizeRequestDto } from './dtos/requests/note-summarize.request.dto';
@@ -8,6 +9,8 @@ import { NoteSummarizeResponseDto } from './dtos/responses/note-summarize.respon
 
 @ApiTags('notes')
 @ApiBearerAuth()
+@Roles(UserRole.PRATICIEN)
+@UseGuards(RolesGuard)
 @Controller({ path: 'notes', version: '1' })
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}

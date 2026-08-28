@@ -10,7 +10,7 @@ describe('HealthController', () => {
     expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(result.uptimeSeconds).toBeGreaterThanOrEqual(0);
     expect(result.timestamp).toEqual(expect.any(String));
-    expect(result.node).toMatch(/^v\d+/);
-    expect(typeof result.environment).toBe('string');
+    expect(result).not.toHaveProperty('node');
+    expect(result).not.toHaveProperty('environment');
   });
 });

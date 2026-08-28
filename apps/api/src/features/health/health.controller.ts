@@ -9,8 +9,6 @@ export type HealthResponse = {
   version: string;
   uptimeSeconds: number;
   timestamp: string;
-  node: string;
-  environment: string;
 };
 
 function readAppVersion(): string {
@@ -37,8 +35,6 @@ export class HealthController {
       version: this.version,
       uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
       timestamp: new Date().toISOString(),
-      node: process.version,
-      environment: process.env['NODE_ENV'] ?? 'development',
     };
   }
 }

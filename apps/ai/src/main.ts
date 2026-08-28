@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { applySecurityMiddleware, HttpExceptionFilter, shouldEnableSwagger } from '@app/shared';
 import { AiModule } from './ai.module';
-import { HttpExceptionFilter } from '@app/shared';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AiModule);
+  applySecurityMiddleware(app);
 
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -20,14 +21,16 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('m-dicail AI API')
-    .setDescription('Service IA — recherche intelligente PubMed + suggestions')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  if (shouldEnableSwagger()) {
+    const config = new DocumentBuilder()
+      .setTitle('m-dicail AI API')
+      .setDescription('Service IA — recherche intelligente PubMed + suggestions')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   await app.listen(Number(process.env.AI_PORT));
 }

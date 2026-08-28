@@ -1,12 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { HttpExceptionFilter } from '@app/shared';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { applySecurityMiddleware, HttpExceptionFilter, shouldEnableSwagger } from '@app/shared';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  applySecurityMiddleware(app);
 
   app.setGlobalPrefix('api', { exclude: ['health'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -21,9 +21,11 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  const config = new DocumentBuilder().setTitle('m-dicail API').setDescription('API m-dicail').setVersion('1.0').addBearerAuth().build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  if (shouldEnableSwagger()) {
+    const config = new DocumentBuilder().setTitle('m-dicail API').setDescription('API m-dicail').setVersion('1.0').addBearerAuth().build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   await app.listen(Number(process.env.PORT));
 }

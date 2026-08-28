@@ -7,6 +7,8 @@ import { ArticleResponseDto } from '../dtos/responses/article.response.dto';
 const NCBI_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 const NCBI_TOOL = 'medicail';
 const NCBI_USER_AGENT = 'medicail/1.0';
+const NCBI_TIMEOUT_MS = 15_000;
+const NCBI_RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 0 : 400;
 const MESH_THERAPY_QUALIFIERS = new Set(['rehabilitation', 'therapy', 'physiopathology', 'diet therapy']);
 
 interface MeshCandidate {
@@ -269,11 +271,43 @@ export class PubmedService {
   }
 
   private async ncbiFetch(url: string): Promise<Response> {
-    return fetch(url, {
-      headers: {
-        'User-Agent': NCBI_USER_AGENT,
-      },
-    });
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await this.ncbiFetchOnce(url);
+        const retryable = res.status === 429 || res.status >= 500;
+        if (!retryable || attempt === 1) return res;
+      } catch (err) {
+        lastError = err;
+        if (attempt === 1) throw err;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, NCBI_RETRY_DELAY_MS));
+    }
+
+    throw lastError instanceof Error ? lastError : new BadGatewayException('NCBI request failed');
+  }
+
+  private async ncbiFetchOnce(url: string): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), NCBI_TIMEOUT_MS);
+
+    try {
+      return await fetch(url, {
+        headers: {
+          'User-Agent': NCBI_USER_AGENT,
+        },
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new BadGatewayException('NCBI request timed out');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async esearch(db: string, query: string, maxResults: number): Promise<string[]> {
