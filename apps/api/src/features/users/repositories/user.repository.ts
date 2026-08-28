@@ -18,4 +18,8 @@ export class UserRepository {
   save(user: Partial<User>): Promise<User> {
     return this.repo.save(user);
   }
+
+  findDigestOptInUsers(): Promise<User[]> {
+    return this.repo.find({ where: { medicalWatchDigestOptIn: true } });
+  }
 }

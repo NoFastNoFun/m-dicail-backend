@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { MedicalWatchService } from './medical-watch.service';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
+import { UsersService } from '@features/users/services/users.service';
+import { MailService } from '../../mail/services/mail.service';
 import { MedicalWatchArticle } from '../entities/medical-watch-article.entity';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
 
@@ -46,8 +48,24 @@ describe('MedicalWatchService', () => {
       count: jest.fn().mockResolvedValue(1),
     } as unknown as jest.Mocked<MedicalWatchRepository>;
 
+    const usersService = {
+      findById: jest.fn(),
+      findDigestOptInUsers: jest.fn().mockResolvedValue([]),
+      updateDigestOptIn: jest.fn(),
+    };
+
+    const mailService = {
+      sendMail: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MedicalWatchService, { provide: PubmedService, useValue: pubmedService }, { provide: MedicalWatchRepository, useValue: repository }],
+      providers: [
+        MedicalWatchService,
+        { provide: PubmedService, useValue: pubmedService },
+        { provide: MedicalWatchRepository, useValue: repository },
+        { provide: UsersService, useValue: usersService },
+        { provide: MailService, useValue: mailService },
+      ],
     }).compile();
 
     service = module.get(MedicalWatchService);

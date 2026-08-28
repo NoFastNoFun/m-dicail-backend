@@ -30,6 +30,44 @@ class EnvironmentVariables {
   @IsInt()
   @Min(1)
   declare REFRESH_TOKEN_TTL_DAYS: number;
+
+  @IsString()
+  @IsOptional()
+  declare SMTP_HOST?: string;
+
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  @Max(65000)
+  declare SMTP_PORT?: number;
+
+  @IsString()
+  @IsOptional()
+  declare SMTP_USER?: string;
+
+  @IsString()
+  @IsOptional()
+  declare SMTP_PASS?: string;
+
+  @IsString()
+  @IsOptional()
+  declare SMTP_FROM?: string;
+
+  @IsString()
+  @IsOptional()
+  declare APP_PUBLIC_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  declare WEBAUTHN_RP_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  declare WEBAUTHN_RP_NAME?: string;
+
+  @IsString()
+  @IsOptional()
+  declare WEBAUTHN_ORIGIN?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

@@ -15,6 +15,10 @@ export class UsersService {
     return this.userRepository.findById(id);
   }
 
+  findDigestOptInUsers(): Promise<User[]> {
+    return this.userRepository.findDigestOptInUsers();
+  }
+
   create(email: string, hashedPassword: string, fullName?: string): Promise<User> {
     return this.userRepository.save({
       email,
@@ -36,5 +40,17 @@ export class UsersService {
 
   updateRefreshToken(userId: string, hashedRefreshToken: string | null, refreshTokenExpiresAt: Date | null): Promise<User> {
     return this.userRepository.save({ id: userId, hashedRefreshToken, refreshTokenExpiresAt });
+  }
+
+  updatePassword(userId: string, hashedPassword: string): Promise<User> {
+    return this.userRepository.save({ id: userId, hashedPassword });
+  }
+
+  updateMfa(userId: string, data: Pick<Partial<User>, 'mfaEnabled' | 'totpSecret'>): Promise<User> {
+    return this.userRepository.save({ id: userId, ...data });
+  }
+
+  updateDigestOptIn(userId: string, medicalWatchDigestOptIn: boolean): Promise<User> {
+    return this.userRepository.save({ id: userId, medicalWatchDigestOptIn });
   }
 }

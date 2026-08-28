@@ -18,6 +18,9 @@ describe('UsersService', () => {
     createdAt: new Date(),
     hashedRefreshToken: null,
     refreshTokenExpiresAt: null,
+    mfaEnabled: false,
+    totpSecret: null,
+    medicalWatchDigestOptIn: false,
   };
 
   beforeEach(async () => {

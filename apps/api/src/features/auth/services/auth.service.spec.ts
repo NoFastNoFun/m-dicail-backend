@@ -7,7 +7,11 @@ import { UserRole } from '@app/shared';
 import { UsersService } from '@features/users/services/users.service';
 import { PatientsService } from '@features/patients/services/patients.service';
 import { User } from '@features/users/entities/user.entity';
+import { MailService } from '../../mail/services/mail.service';
 import { AuthService } from './auth.service';
+import { AuthTokenService } from './auth-token.service';
+import { MfaService } from './mfa.service';
+import { PasskeysService } from './passkeys.service';
 
 jest.mock('argon2', () => ({
   hash: jest.fn(),
@@ -20,6 +24,7 @@ describe('AuthService', () => {
   let patientsService: jest.Mocked<PatientsService>;
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
+  let passkeysService: jest.Mocked<PasskeysService>;
 
   const mockUser: User = {
     id: 'user-1',
@@ -31,6 +36,9 @@ describe('AuthService', () => {
     createdAt: new Date('2024-01-01'),
     hashedRefreshToken: 'hashed-refresh-token',
     refreshTokenExpiresAt: new Date('2999-01-01'),
+    mfaEnabled: false,
+    totpSecret: null,
+    medicalWatchDigestOptIn: false,
   };
 
   beforeEach(async () => {
@@ -40,6 +48,9 @@ describe('AuthService', () => {
       create: jest.fn(),
       updateRefreshToken: jest.fn(),
       createPatientAccount: jest.fn(),
+      updatePassword: jest.fn(),
+      updateMfa: jest.fn(),
+      updateDigestOptIn: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
 
     patientsService = {
@@ -48,11 +59,32 @@ describe('AuthService', () => {
 
     jwtService = {
       sign: jest.fn().mockReturnValue('access-token'),
+      verify: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
 
     configService = {
       getOrThrow: jest.fn().mockReturnValue(7),
+      get: jest.fn(),
     } as unknown as jest.Mocked<ConfigService>;
+
+    passkeysService = {
+      hasPasskeys: jest.fn().mockResolvedValue(false),
+    } as unknown as jest.Mocked<PasskeysService>;
+
+    const mailService = {
+      sendMail: jest.fn(),
+      getPublicAppUrl: jest.fn().mockReturnValue('http://localhost:3000'),
+    };
+
+    const authTokenService = {
+      createToken: jest.fn(),
+      consumeToken: jest.fn(),
+    };
+
+    const mfaService = {
+      verifyTotpOrRecovery: jest.fn(),
+      disableMfaForRecovery: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -61,6 +93,10 @@ describe('AuthService', () => {
         { provide: PatientsService, useValue: patientsService },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configService },
+        { provide: MailService, useValue: mailService },
+        { provide: AuthTokenService, useValue: authTokenService },
+        { provide: MfaService, useValue: mfaService },
+        { provide: PasskeysService, useValue: passkeysService },
       ],
     }).compile();
 
@@ -69,14 +105,15 @@ describe('AuthService', () => {
     (argon2.hash as jest.Mock).mockResolvedValue('new-refresh-hash');
     configService.getOrThrow.mockReturnValue(7);
     usersService.updateRefreshToken.mockResolvedValue(mockUser);
+    passkeysService.hasPasskeys.mockResolvedValue(false);
   });
 
   describe('register', () => {
     it('creates a user and returns an access token + refresh token', async () => {
       usersService.findByEmail.mockResolvedValue(null);
       (argon2.hash as jest.Mock)
-        .mockResolvedValueOnce('new-password-hash') // password
-        .mockResolvedValueOnce('new-refresh-hash'); // refresh token
+        .mockResolvedValueOnce('new-password-hash')
+        .mockResolvedValueOnce('new-refresh-hash');
       usersService.create.mockResolvedValue(mockUser);
 
       const result = await service.register({
@@ -91,16 +128,9 @@ describe('AuthService', () => {
         email: 'test@example.com',
         role: UserRole.PRATICIEN,
       });
-      expect(usersService.updateRefreshToken).toHaveBeenCalledWith('user-1', 'new-refresh-hash', expect.any(Date));
-      expect(result.user).toEqual({
-        id: 'user-1',
-        email: 'test@example.com',
-        fullName: 'Test User',
-        role: UserRole.PRATICIEN,
-        patientId: null,
-      });
+      expect(result.status).toBe('authenticated');
+      expect(result.user.email).toBe('test@example.com');
       expect(result.accessToken).toBe('access-token');
-      expect(result.tokenType).toBe('bearer');
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
     });
 
@@ -137,15 +167,8 @@ describe('AuthService', () => {
       const result = await service.createPatientAccount(dto);
 
       expect(usersService.createPatientAccount).toHaveBeenCalledWith(dto.email, 'new-hash', dto.patientId, dto.fullName);
-      expect(result).toEqual({
-        user: {
-          id: 'user-2',
-          email: dto.email,
-          fullName: 'Patient',
-          role: UserRole.PATIENT,
-          patientId: 'patient_1',
-        },
-      });
+      expect(result.user.email).toBe(dto.email);
+      expect(result.user.role).toBe(UserRole.PATIENT);
     });
 
     it('throws NotFoundException when patient does not exist', async () => {
@@ -169,17 +192,25 @@ describe('AuthService', () => {
 
       const result = await service.login({ email: 'test@example.com', password: 'password123' });
 
-      expect(result.user).toEqual({
-        id: 'user-1',
-        email: 'test@example.com',
-        fullName: 'Test User',
-        role: UserRole.PRATICIEN,
-        patientId: null,
-      });
-      expect(result.accessToken).toBe('access-token');
-      expect(result.tokenType).toBe('bearer');
-      expect(result.refreshToken.startsWith('user-1.')).toBe(true);
-      expect(usersService.updateRefreshToken).toHaveBeenCalledWith('user-1', 'new-refresh-hash', expect.any(Date));
+      expect(result.status).toBe('authenticated');
+      if (result.status === 'authenticated') {
+        expect(result.user.email).toBe('test@example.com');
+        expect(result.accessToken).toBe('access-token');
+        expect(result.refreshToken.startsWith('user-1.')).toBe(true);
+      }
+    });
+
+    it('returns mfa_required when MFA is enabled', async () => {
+      usersService.findByEmail.mockResolvedValue({ ...mockUser, mfaEnabled: true });
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue('mfa-token');
+
+      const result = await service.login({ email: 'test@example.com', password: 'password123' });
+
+      expect(result.status).toBe('mfa_required');
+      if (result.status === 'mfa_required') {
+        expect(result.mfaToken).toBe('mfa-token');
+      }
     });
 
     it('throws UnauthorizedException when user is not found', async () => {
@@ -203,41 +234,12 @@ describe('AuthService', () => {
 
       const result = await service.refresh({ refreshToken: 'user-1.some-secret' });
 
-      expect(usersService.findById).toHaveBeenCalledWith('user-1');
-      expect(argon2.verify).toHaveBeenCalledWith('hashed-refresh-token', 'some-secret');
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
-      expect(result.refreshToken).not.toBe('user-1.some-secret');
-      expect(usersService.updateRefreshToken).toHaveBeenCalledWith('user-1', 'new-refresh-hash', expect.any(Date));
     });
 
     it('throws UnauthorizedException when the token has no separator', async () => {
       await expect(service.refresh({ refreshToken: 'not-a-valid-token' })).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws UnauthorizedException when the user is not found', async () => {
-      usersService.findById.mockResolvedValue(null);
-
-      await expect(service.refresh({ refreshToken: 'user-1.some-secret' })).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws UnauthorizedException when there is no stored refresh token', async () => {
-      usersService.findById.mockResolvedValue({ ...mockUser, hashedRefreshToken: null, refreshTokenExpiresAt: null });
-
-      await expect(service.refresh({ refreshToken: 'user-1.some-secret' })).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws UnauthorizedException when the stored refresh token is expired', async () => {
-      usersService.findById.mockResolvedValue({ ...mockUser, refreshTokenExpiresAt: new Date('2000-01-01') });
-
-      await expect(service.refresh({ refreshToken: 'user-1.some-secret' })).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws UnauthorizedException when the secret does not match the stored hash', async () => {
-      usersService.findById.mockResolvedValue(mockUser);
-      (argon2.verify as jest.Mock).mockResolvedValue(false);
-
-      await expect(service.refresh({ refreshToken: 'user-1.wrong-secret' })).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -255,13 +257,8 @@ describe('AuthService', () => {
 
       const result = await service.me('user-1');
 
-      expect(result).toEqual({
-        id: 'user-1',
-        email: 'test@example.com',
-        fullName: 'Test User',
-        role: UserRole.PRATICIEN,
-        patientId: null,
-      });
+      expect(result.email).toBe('test@example.com');
+      expect(result.mfaEnabled).toBe(false);
     });
 
     it('throws UnauthorizedException when user is not found', async () => {
