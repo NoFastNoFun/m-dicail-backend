@@ -134,8 +134,13 @@ Managed with **TypeORM** — one file per domain, located in `apps/api/src/migra
 
 | File | Description |
 |---|---|
-| `1750000000000-Init.ts` | Creates `users`, `patients`, `recording_sessions` tables |
-| `1782811334916-AddRoleToUsers.ts` | Adds `role` (enum: PRATICIEN/PATIENT) and `patient_id` columns to `users` |
+| `init-core-schema.ts` | Creates `users`, `patients`, `recording_sessions` tables |
+| `create-appointments.ts` | Creates `appointments` table |
+| `add-medical-watch.ts` | Creates `medical_watch_articles` table |
+| `add-refresh-token-to-user.ts` | Adds refresh token columns to `users` |
+| `add-role-to-users.ts` | Adds `role` (enum: PRATICIEN/PATIENT) and `patient_id` columns to `users` |
+| `add-exercises.ts` | Creates `exercises` and `patient_exercises` tables |
+| `add-template-to-recording-sessions.ts` | Adds `template_id` and `template_name` to `recording_sessions` |
 
 Generate a new migration:
 ```bash

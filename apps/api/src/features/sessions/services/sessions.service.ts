@@ -36,6 +36,8 @@ export class SessionsService {
       ...(dto.soap_note !== undefined && { soapNote: dto.soap_note ?? null }),
       ...(dto.summary !== undefined && { summary: dto.summary }),
       ...(dto.patient_id !== undefined && { patientId: dto.patient_id }),
+      ...(dto.template_id !== undefined && { templateId: dto.template_id ?? null }),
+      ...(dto.template_name !== undefined && { templateName: dto.template_name ?? null }),
     });
     return new SessionResponseDto(updated);
   }

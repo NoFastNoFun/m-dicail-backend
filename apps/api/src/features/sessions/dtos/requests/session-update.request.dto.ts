@@ -42,4 +42,14 @@ export class SessionUpdateRequestDto {
   @IsOptional()
   @IsString()
   declare patient_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  declare template_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  declare template_name?: string;
 }

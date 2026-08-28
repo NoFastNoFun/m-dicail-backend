@@ -11,6 +11,8 @@ export class SessionResponseDto {
   @ApiProperty({ nullable: true }) declare transcript: string | null;
   @ApiProperty({ nullable: true }) declare soap_note: SoapNote | null;
   @ApiProperty({ nullable: true }) declare summary: string | null;
+  @ApiProperty({ nullable: true }) declare template_id: string | null;
+  @ApiProperty({ nullable: true }) declare template_name: string | null;
   @ApiProperty() declare created_at: Date;
   @ApiProperty() declare updated_at: Date;
 
@@ -24,6 +26,8 @@ export class SessionResponseDto {
     this.transcript = session.transcript;
     this.soap_note = session.soapNote;
     this.summary = session.summary;
+    this.template_id = session.templateId;
+    this.template_name = session.templateName;
     this.created_at = session.createdAt;
     this.updated_at = session.updatedAt;
   }
