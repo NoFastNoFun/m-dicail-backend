@@ -264,4 +264,170 @@ describe('PubmedService', () => {
     expect(result[0].publication_date).toBeNull();
     expect(result[0].doi).toBeNull();
   });
+
+  it('returns empty array when MeSH query is blank', async () => {
+    await expect(service.searchMesh('   ', 5)).resolves.toEqual([]);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns empty array when MeSH and PubMed fallback searches are empty', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: [] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: [] } }),
+      });
+
+    await expect(service.searchMesh('unknown', 5)).resolves.toEqual([]);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws BadGatewayException when MeSH esummary fails', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['68008200'] } }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 500 });
+
+    await expect(service.searchMesh('low back pain', 5)).rejects.toThrow(BadGatewayException);
+  });
+
+  it('throws BadGatewayException when MeSH esummary returns an ERROR field', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['68008200'] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: { ERROR: 'unavailable' } }),
+      });
+
+    await expect(service.searchMesh('low back pain', 5)).rejects.toThrow(/unavailable/);
+  });
+
+  it('parses MeSH synonyms, skips invalid records, and keeps disease trees only', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['1', '2', '3'] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          result: {
+            uids: ['1', '2', '3'],
+            '1': {
+              ds_meshui: 'D017116',
+              ds_meshname: 'Low Back Pain',
+              ds_treenumbers: 'C05.116; C10.597',
+              ds_conceptlist: [{ terms: ['Low Back Pain', 'Lumbago', '  '] }],
+            },
+            '2': null,
+            '3': {
+              ds_meshui: 'D009716',
+              ds_meshname: 'Nursing',
+              ds_treenumbers: 'H02.478',
+            },
+          },
+        }),
+      });
+
+    const result = await service.searchMesh('low back pain', 5);
+
+    expect(result).toEqual([
+      {
+        mesh_ui: 'D017116',
+        term: 'Low Back Pain',
+        synonyms: ['Lumbago'],
+        tree_numbers: ['C05.116', 'C10.597'],
+      },
+    ]);
+  });
+
+  it('throws BadGatewayException when PubMed fallback efetch fails', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: [] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['1'] } }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 502 });
+
+    await expect(service.searchMesh('lombalgie', 5)).rejects.toThrow(BadGatewayException);
+  });
+
+  it('aggregates fallback MeSH headings and skips non-therapy qualifiers', async () => {
+    const meshXml = `<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>1</PMID>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D017116">Low Back Pain</DescriptorName>
+          <QualifierName>rehabilitation</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D017116">Low Back Pain</DescriptorName>
+          <QualifierName>therapy</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D009369">Neoplasms</DescriptorName>
+          <QualifierName>diagnosis</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName></DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010830">Physical Therapy Modalities</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>`;
+
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: [] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['1'] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => meshXml,
+      });
+
+    const result = await service.searchMesh('lombalgie', 5);
+
+    expect(result.map((item) => item.mesh_ui)).toEqual(['D017116', 'D010830']);
+  });
+
+  it('returns empty array when fallback MeSH XML is invalid', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: [] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ esearchresult: { idlist: ['1'] } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => 'not-xml',
+      });
+
+    await expect(service.searchMesh('lombalgie', 5)).resolves.toEqual([]);
+  });
 });
