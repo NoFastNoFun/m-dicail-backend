@@ -60,6 +60,24 @@ describe('PubmedService', () => {
     jest.restoreAllMocks();
   });
 
+  it('throws BadGatewayException when NCBI times out', async () => {
+    const abortError = new Error('aborted');
+    abortError.name = 'AbortError';
+    (global.fetch as jest.Mock).mockRejectedValue(abortError);
+
+    await expect(service.search('query', 10)).rejects.toThrow(/timed out/);
+  });
+
+  it('retries a 500 then succeeds', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500 }).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ esearchresult: { idlist: [] } }),
+    });
+
+    await expect(service.search('query', 10)).resolves.toEqual([]);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('returns empty array when no PMIDs are found', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -137,6 +155,7 @@ describe('PubmedService', () => {
         ok: true,
         json: async () => ({ esearchresult: { idlist: ['12345'] } }),
       })
+      .mockResolvedValueOnce({ ok: false, status: 500 })
       .mockResolvedValueOnce({ ok: false, status: 500 });
 
     await expect(service.search('query', 10)).rejects.toThrow(BadGatewayException);
@@ -291,6 +310,7 @@ describe('PubmedService', () => {
         ok: true,
         json: async () => ({ esearchresult: { idlist: ['68008200'] } }),
       })
+      .mockResolvedValueOnce({ ok: false, status: 500 })
       .mockResolvedValueOnce({ ok: false, status: 500 });
 
     await expect(service.searchMesh('low back pain', 5)).rejects.toThrow(BadGatewayException);
@@ -359,6 +379,7 @@ describe('PubmedService', () => {
         ok: true,
         json: async () => ({ esearchresult: { idlist: ['1'] } }),
       })
+      .mockResolvedValueOnce({ ok: false, status: 502 })
       .mockResolvedValueOnce({ ok: false, status: 502 });
 
     await expect(service.searchMesh('lombalgie', 5)).rejects.toThrow(BadGatewayException);

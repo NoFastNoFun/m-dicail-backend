@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '@app/shared';
+import { CurrentUser, Roles, RolesGuard, UserRole } from '@app/shared';
 import { AppointmentsService } from './services/appointments.service';
 import { AppointmentCreateRequestDto } from './dtos/requests/appointment-create.request.dto';
 import { AppointmentUpdateRequestDto } from './dtos/requests/appointment-update.request.dto';
@@ -8,6 +8,8 @@ import { AppointmentResponseDto } from './dtos/responses/appointment.response.dt
 
 @ApiTags('appointments')
 @ApiBearerAuth()
+@Roles(UserRole.PRATICIEN)
+@UseGuards(RolesGuard)
 @Controller({ path: 'appointments', version: '1' })
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}

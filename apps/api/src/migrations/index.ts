@@ -5,6 +5,7 @@ import { AddRefreshTokenToUser1751000000000 } from './add-refresh-token-to-user'
 import { AddRoleToUsers1782811334916 } from './add-role-to-users';
 import { AddExercises1783000000000 } from './add-exercises';
 import { AddTemplateToRecordingSessions1784000000000 } from './add-template-to-recording-sessions';
+import { AddAuthMfaPasskeys1785000000000 } from './add-auth-mfa-passkeys';
 
 export const migrations = [
   Init1750000000000,
@@ -14,4 +15,5 @@ export const migrations = [
   AddRoleToUsers1782811334916,
   AddExercises1783000000000,
   AddTemplateToRecordingSessions1784000000000,
+  AddAuthMfaPasskeys1785000000000,
 ];

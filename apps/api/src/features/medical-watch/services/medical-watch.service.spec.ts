@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { MedicalWatchService } from './medical-watch.service';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
+import { UsersService } from '@features/users/services/users.service';
+import { MailService } from '../../mail/services/mail.service';
 import { MedicalWatchArticle } from '../entities/medical-watch-article.entity';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
 
@@ -10,6 +12,11 @@ describe('MedicalWatchService', () => {
   let service: MedicalWatchService;
   let pubmedService: jest.Mocked<PubmedService>;
   let repository: jest.Mocked<MedicalWatchRepository>;
+  let usersService: {
+    findById: jest.Mock;
+    findDigestOptInUsers: jest.Mock;
+    updateDigestOptIn: jest.Mock;
+  };
 
   const mockArticle: MedicalWatchArticle = {
     pmid: '12345',
@@ -46,8 +53,24 @@ describe('MedicalWatchService', () => {
       count: jest.fn().mockResolvedValue(1),
     } as unknown as jest.Mocked<MedicalWatchRepository>;
 
+    usersService = {
+      findById: jest.fn(),
+      findDigestOptInUsers: jest.fn().mockResolvedValue([]),
+      updateDigestOptIn: jest.fn(),
+    };
+
+    const mailService = {
+      sendMail: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MedicalWatchService, { provide: PubmedService, useValue: pubmedService }, { provide: MedicalWatchRepository, useValue: repository }],
+      providers: [
+        MedicalWatchService,
+        { provide: PubmedService, useValue: pubmedService },
+        { provide: MedicalWatchRepository, useValue: repository },
+        { provide: UsersService, useValue: usersService },
+        { provide: MailService, useValue: mailService },
+      ],
     }).compile();
 
     service = module.get(MedicalWatchService);
@@ -232,6 +255,24 @@ describe('MedicalWatchService', () => {
 
       expect(repository.count).toHaveBeenCalled();
       expect(pubmedService.search).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('preferences and digest', () => {
+    it('getPreferences returns false when the user is missing', async () => {
+      usersService.findById.mockResolvedValue(null);
+      await expect(service.getPreferences('user-1')).resolves.toEqual({ digestOptIn: false });
+    });
+
+    it('updatePreferences persists the flag', async () => {
+      usersService.updateDigestOptIn.mockResolvedValue({ medicalWatchDigestOptIn: true });
+      await expect(service.updatePreferences('user-1', true)).resolves.toEqual({ digestOptIn: true });
+    });
+
+    it('sendDailyDigest logs opted-in users', async () => {
+      usersService.findDigestOptInUsers.mockResolvedValue([{ id: 'user-1' }]);
+      await service.sendDailyDigest();
+      expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('1 opted-in'));
     });
   });
 });

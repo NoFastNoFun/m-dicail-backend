@@ -44,6 +44,16 @@ Then fill in the values in `.env` :
 | `POSTGRES_PASSWORD` | PostgreSQL password |
 | `POSTGRES_DB` | PostgreSQL database name |
 | `NCBI_API_KEY` | *(optional)* PubMed API key — without it rate limit is 3 req/s instead of 10. Get one at https://www.ncbi.nlm.nih.gov/account/ |
+| `NCBI_EMAIL` | *(optional)* Contact email sent with NCBI E-utilities requests |
+| `APP_PUBLIC_URL` | Public app URL for password-reset and account-recovery links in emails (e.g. `https://medicail.nf2.dev`) |
+| `SMTP_HOST` | *(optional)* Outbound mail host — Proton: `smtp.protonmail.ch`; Bridge: `127.0.0.1`. If unset, mail is skipped |
+| `SMTP_PORT` | SMTP port — `587` (Proton STARTTLS) or `1025` (Proton Bridge) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password or Proton SMTP token |
+| `SMTP_FROM` | From address (e.g. `Medicail <noreply@example.com>`) |
+| `WEBAUTHN_RP_ID` | Passkey relying party ID — must match the app host (e.g. `medicail.nf2.dev`) |
+| `WEBAUTHN_RP_NAME` | Passkey display name shown to users (default: `Medicail`) |
+| `WEBAUTHN_ORIGIN` | Passkey origin URL (e.g. `https://medicail.nf2.dev`) |
 
 > Never commit `.env` to git.
 
@@ -207,3 +217,59 @@ Il y a deux APIs NCBI distinctes :
 - **PMC (PubMed Central)** — donne accès au texte complet des articles, mais uniquement pour les publications open access (~40% du catalogue). Les 60% restants sont bloqués par les journaux payants (Elsevier, Springer, etc.). → [Documentation PMC](https://www.ncbi.nlm.nih.gov/pmc/tools/developers/)
 
 Pour le POC on part sur E-utilities (abstracts uniquement) pour valider que ça suffit à l'IA pour générer des recommandations pertinentes. Si les abstracts s'avèrent insuffisants, on pourra compléter avec PMC pour les articles open access.
+
+## Email (Proton SMTP)
+
+Outbound mail uses nodemailer via `MailModule`. If SMTP env vars are missing, the API boots but skips sending (logged).
+
+### Proton hosted SMTP (production / test)
+
+```env
+SMTP_HOST=smtp.protonmail.ch
+SMTP_PORT=587
+SMTP_USER=your-address@proton.me
+SMTP_PASS=your-smtp-token
+SMTP_FROM=Medicail <your-address@proton.me>
+APP_PUBLIC_URL=https://medicail.nf2.dev
+```
+
+Generate the SMTP token in Proton Mail → Settings → Proton Mail → IMAP/SMTP → SMTP tokens.
+
+### Proton Bridge (local dev)
+
+```env
+SMTP_HOST=127.0.0.1
+SMTP_PORT=1025
+SMTP_USER=your-bridge-user
+SMTP_PASS=your-bridge-password
+SMTP_FROM=dev@medicail.test
+APP_PUBLIC_URL=http://localhost:3000
+```
+
+### WebAuthn / passkeys
+
+```env
+WEBAUTHN_RP_ID=medicail.nf2.dev
+WEBAUTHN_RP_NAME=Medicail
+WEBAUTHN_ORIGIN=https://medicail.nf2.dev
+```
+
+### Auth endpoints (extended)
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/v1/auth/forgot-password` | ❌ | Request password reset email |
+| POST | `/api/v1/auth/reset-password` | ❌ | Reset password with token |
+| POST | `/api/v1/auth/recovery/request` | ❌ | Request account recovery (disable TOTP) |
+| POST | `/api/v1/auth/recovery/confirm` | ❌ | Confirm recovery token |
+| POST | `/api/v1/auth/mfa/verify` | ❌ | Complete login after TOTP/recovery code |
+| POST | `/api/v1/auth/mfa/enroll` | ✅ | Start TOTP enrollment |
+| POST | `/api/v1/auth/mfa/confirm` | ✅ | Confirm TOTP + get recovery codes |
+| POST | `/api/v1/auth/mfa/disable` | ✅ | Disable TOTP |
+| POST | `/api/v1/auth/passkeys/register/options` | ✅ | WebAuthn registration options |
+| POST | `/api/v1/auth/passkeys/register/verify` | ✅ | Verify passkey registration |
+| POST | `/api/v1/auth/passkeys/authenticate/options` | ❌ | Passkey login options |
+| POST | `/api/v1/auth/passkeys/authenticate/verify` | ❌ | Passkey login verify |
+| GET | `/api/v1/auth/passkeys` | ✅ | List passkeys |
+| DELETE | `/api/v1/auth/passkeys/:id` | ✅ | Remove passkey |
+| GET/PATCH | `/api/v1/medical-watch/preferences` | ✅ | Digest opt-in (email CRON stub at 07:00 Paris) |
