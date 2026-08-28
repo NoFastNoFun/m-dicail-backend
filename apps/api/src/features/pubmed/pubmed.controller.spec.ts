@@ -9,6 +9,7 @@ describe('PubmedController', () => {
   beforeEach(async () => {
     pubmedService = {
       search: jest.fn(),
+      searchMesh: jest.fn(),
     } as unknown as jest.Mocked<PubmedService>;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -25,5 +26,13 @@ describe('PubmedController', () => {
 
     await expect(controller.search({ query: 'physio', max_results: 5 })).resolves.toBe(articles);
     expect(pubmedService.search).toHaveBeenCalledWith('physio', 5);
+  });
+
+  it('searchMesh delegates to pubmedService', async () => {
+    const descriptors = [{ mesh_ui: 'D017116', term: 'Low Back Pain', synonyms: [], tree_numbers: ['C05.116'] }];
+    pubmedService.searchMesh.mockResolvedValue(descriptors);
+
+    await expect(controller.searchMesh({ query: 'lombalgie', max_results: 5 })).resolves.toBe(descriptors);
+    expect(pubmedService.searchMesh).toHaveBeenCalledWith('lombalgie', 5);
   });
 });

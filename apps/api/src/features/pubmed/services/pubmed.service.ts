@@ -79,7 +79,12 @@ export class PubmedService {
     return aggregated
       .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
       .slice(0, maxResults)
-      .map(({ count: _count, ...descriptor }) => descriptor);
+      .map(({ mesh_ui, term, synonyms, tree_numbers }) => ({
+        mesh_ui,
+        term,
+        synonyms,
+        tree_numbers,
+      }));
   }
 
   private async meshEsummary(ids: string[]): Promise<MeshDescriptorResponseDto[]> {
@@ -195,8 +200,7 @@ export class PubmedService {
       return [];
     }
 
-    const pubmedArticles: unknown[] =
-      (root as { PubmedArticleSet?: { PubmedArticle?: unknown[] } })?.PubmedArticleSet?.PubmedArticle ?? [];
+    const pubmedArticles: unknown[] = (root as { PubmedArticleSet?: { PubmedArticle?: unknown[] } })?.PubmedArticleSet?.PubmedArticle ?? [];
 
     const counts = new Map<string, MeshCandidate>();
 
@@ -214,17 +218,20 @@ export class PubmedService {
 
         const qualifiers = (heading['QualifierName'] as Record<string, unknown>[]) ?? [];
         const qualifierTexts = qualifiers
-          .map((qualifier) => String(qualifier?.['_'] ?? qualifier ?? '').trim().toLowerCase())
+          .map((qualifier) =>
+            String(qualifier?.['_'] ?? qualifier ?? '')
+              .trim()
+              .toLowerCase(),
+          )
           .filter(Boolean);
 
-        const hasTherapyQualifier =
-          qualifierTexts.length === 0 ||
-          qualifierTexts.some((qualifier) => MESH_THERAPY_QUALIFIERS.has(qualifier));
+        const hasTherapyQualifier = qualifierTexts.length === 0 || qualifierTexts.some((qualifier) => MESH_THERAPY_QUALIFIERS.has(qualifier));
         if (!hasTherapyQualifier) {
           continue;
         }
 
-        const ui = String(descriptorNode?.['$']?.['UI'] ?? '').trim();
+        const attrs = descriptorNode?.['$'] as Record<string, string> | undefined;
+        const ui = String(attrs?.['UI'] ?? '').trim();
         const key = ui || term.toLowerCase();
         const existing = counts.get(key);
         if (existing) {
