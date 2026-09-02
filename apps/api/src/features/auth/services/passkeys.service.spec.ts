@@ -92,9 +92,7 @@ describe('PasskeysService', () => {
     credentialRepository.findByUserId.mockResolvedValue([{ credentialId: 'existing' }]);
     await service.getRegistrationOptions('user-1');
     expect(challengeRepository.save).toHaveBeenCalledWith(expect.objectContaining({ type: 'registration', challenge: 'reg-challenge' }));
-    expect(generateRegistrationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({ rpName: 'Medicail', rpID: 'localhost' }),
-    );
+    expect(generateRegistrationOptions).toHaveBeenCalledWith(expect.objectContaining({ rpName: 'Medicail', rpID: 'localhost' }));
   });
 
   it('ignores placeholder Test RP name and strips URL schemes from RP ID', () => {
@@ -126,9 +124,7 @@ describe('PasskeysService', () => {
     const withTestName = module.get(PasskeysService);
     credentialRepository.findByUserId.mockResolvedValue([]);
     await withTestName.getRegistrationOptions('user-1');
-    expect(generateRegistrationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({ rpName: 'Medicail', rpID: 'medicail.nf2.dev' }),
-    );
+    expect(generateRegistrationOptions).toHaveBeenCalledWith(expect.objectContaining({ rpName: 'Medicail', rpID: 'medicail.nf2.dev' }));
   });
 
   it('verifyRegistration consumes the challenge then stores the credential', async () => {
