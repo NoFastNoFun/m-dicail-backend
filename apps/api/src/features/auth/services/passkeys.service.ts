@@ -180,14 +180,35 @@ export class PasskeysService {
   }
 
   private getRpId(): string {
-    return this.configService.get<string>('WEBAUTHN_RP_ID') ?? 'localhost';
+    const raw = this.configService.get<string>('WEBAUTHN_RP_ID') ?? 'localhost';
+    return PasskeysService.normalizeRpId(raw);
   }
 
   private getRpName(): string {
-    return this.configService.get<string>('WEBAUTHN_RP_NAME') ?? 'Medicail';
+    // Product display name shown in OS passkey dialogs (match MFA issuer).
+    // Ignore leftover placeholder values like "Test".
+    const configured = this.configService.get<string>('WEBAUTHN_RP_NAME')?.trim();
+    if (!configured || /^test$/i.test(configured)) {
+      return 'Medicail';
+    }
+    return configured;
   }
 
   private getOrigin(): string {
     return this.configService.get<string>('WEBAUTHN_ORIGIN') ?? 'http://localhost:3000';
+  }
+
+  /** RP ID must be a hostname, never a URL with scheme. */
+  static normalizeRpId(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return 'localhost';
+    try {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
+        return new URL(trimmed).hostname || 'localhost';
+      }
+    } catch {
+      // fall through
+    }
+    return trimmed.replace(/\/.*$/, '') || 'localhost';
   }
 }

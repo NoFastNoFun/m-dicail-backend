@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 
-const PRODUCTION_REQUIRED_KEYS = ['APP_PUBLIC_URL', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'WEBAUTHN_RP_ID', 'WEBAUTHN_ORIGIN'] as const;
+const PRODUCTION_REQUIRED_KEYS = ['APP_PUBLIC_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'WEBAUTHN_RP_ID', 'WEBAUTHN_ORIGIN'] as const;
 
 class EnvironmentVariables {
   @IsInt()
@@ -58,6 +58,10 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  declare MAIL_SKIP?: string;
+
+  @IsString()
+  @IsOptional()
   declare APP_PUBLIC_URL?: string;
 
   @IsString()
@@ -94,8 +98,15 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     throw new Error(errors.toString());
   }
 
+  if (!validated.SMTP_FROM && validated.SMTP_USER) {
+    validated.SMTP_FROM = validated.SMTP_USER;
+  }
+
   if (process.env.NODE_ENV === 'production') {
-    const missing = PRODUCTION_REQUIRED_KEYS.filter((key) => !validated[key]);
+    const missing = PRODUCTION_REQUIRED_KEYS.filter((key) => {
+      const value = validated[key];
+      return value === undefined || value === null || value === '';
+    });
     if (missing.length > 0) {
       throw new Error(`Production env missing: ${missing.join(', ')}`);
     }

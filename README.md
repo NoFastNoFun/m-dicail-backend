@@ -45,15 +45,15 @@ Then fill in the values in `.env` :
 | `POSTGRES_DB` | PostgreSQL database name |
 | `NCBI_API_KEY` | *(optional)* PubMed API key — without it rate limit is 3 req/s instead of 10. Get one at https://www.ncbi.nlm.nih.gov/account/ |
 | `NCBI_EMAIL` | *(optional)* Contact email sent with NCBI E-utilities requests |
-| `APP_PUBLIC_URL` | Public app URL for password-reset and account-recovery links in emails (e.g. `https://medicail.nf2.dev`) |
-| `SMTP_HOST` | *(optional)* Outbound mail host — Proton: `smtp.protonmail.ch`; Bridge: `127.0.0.1`. If unset, mail is skipped |
+| `APP_PUBLIC_URL` | Public app URL for password-reset and account-recovery links in emails (e.g. `https://medicail.nf2.tech`) |
+| `SMTP_HOST` | Outbound mail host — Proton: `smtp.proton.me`; Bridge: `127.0.0.1`. Required to send reset/recovery mail |
 | `SMTP_PORT` | SMTP port — `587` (Proton STARTTLS) or `1025` (Proton Bridge) |
 | `SMTP_USER` | SMTP username |
 | `SMTP_PASS` | SMTP password or Proton SMTP token |
 | `SMTP_FROM` | From address (e.g. `Medicail <noreply@example.com>`) |
-| `WEBAUTHN_RP_ID` | Passkey relying party ID — must match the app host (e.g. `medicail.nf2.dev`) |
+| `WEBAUTHN_RP_ID` | Passkey relying party ID — must match the app host (e.g. `medicail.nf2.tech`) |
 | `WEBAUTHN_RP_NAME` | Passkey display name shown to users (default: `Medicail`) |
-| `WEBAUTHN_ORIGIN` | Passkey origin URL (e.g. `https://medicail.nf2.dev`) |
+| `WEBAUTHN_ORIGIN` | Passkey origin URL (e.g. `https://medicail.nf2.tech`) |
 
 > Never commit `.env` to git.
 
@@ -220,17 +220,17 @@ Pour le POC on part sur E-utilities (abstracts uniquement) pour valider que ça 
 
 ## Email (Proton SMTP)
 
-Outbound mail uses nodemailer via `MailModule`. If SMTP env vars are missing, the API boots but skips sending (logged).
+Outbound mail uses nodemailer via `MailModule`. Missing SMTP makes password-reset return 503, except in tests or when `MAIL_SKIP=true` (local only). Production requires SMTP and never skips.
 
 ### Proton hosted SMTP (production / test)
 
 ```env
-SMTP_HOST=smtp.protonmail.ch
+SMTP_HOST=smtp.proton.me
 SMTP_PORT=587
 SMTP_USER=your-address@proton.me
 SMTP_PASS=your-smtp-token
 SMTP_FROM=Medicail <your-address@proton.me>
-APP_PUBLIC_URL=https://medicail.nf2.dev
+APP_PUBLIC_URL=https://medicail.nf2.tech
 ```
 
 Generate the SMTP token in Proton Mail → Settings → Proton Mail → IMAP/SMTP → SMTP tokens.
@@ -249,9 +249,9 @@ APP_PUBLIC_URL=http://localhost:3000
 ### WebAuthn / passkeys
 
 ```env
-WEBAUTHN_RP_ID=medicail.nf2.dev
+WEBAUTHN_RP_ID=medicail.nf2.tech
 WEBAUTHN_RP_NAME=Medicail
-WEBAUTHN_ORIGIN=https://medicail.nf2.dev
+WEBAUTHN_ORIGIN=https://medicail.nf2.tech
 ```
 
 ### Auth endpoints (extended)
