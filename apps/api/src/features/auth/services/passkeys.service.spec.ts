@@ -15,7 +15,7 @@ jest.mock('@simplewebauthn/server', () => ({
   verifyAuthenticationResponse: jest.fn(),
 }));
 
-import { verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
+import { generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
 
 describe('PasskeysService', () => {
   let service: PasskeysService;
@@ -92,6 +92,43 @@ describe('PasskeysService', () => {
     credentialRepository.findByUserId.mockResolvedValue([{ credentialId: 'existing' }]);
     await service.getRegistrationOptions('user-1');
     expect(challengeRepository.save).toHaveBeenCalledWith(expect.objectContaining({ type: 'registration', challenge: 'reg-challenge' }));
+    expect(generateRegistrationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ rpName: 'Medicail', rpID: 'localhost' }),
+    );
+  });
+
+  it('ignores placeholder Test RP name and strips URL schemes from RP ID', () => {
+    expect(PasskeysService.normalizeRpId('https://medicail.nf2.dev/path')).toBe('medicail.nf2.dev');
+    expect(PasskeysService.normalizeRpId('medicail.nf2.tech')).toBe('medicail.nf2.tech');
+  });
+
+  it('maps placeholder Test RP name to Medicail', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PasskeysService,
+        { provide: UsersService, useValue: usersService },
+        { provide: WebAuthnCredentialRepository, useValue: credentialRepository },
+        { provide: WebAuthnChallengeRepository, useValue: challengeRepository },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) => {
+              if (key === 'WEBAUTHN_RP_ID') return 'https://medicail.nf2.dev';
+              if (key === 'WEBAUTHN_RP_NAME') return 'Test';
+              if (key === 'WEBAUTHN_ORIGIN') return 'https://medicail.nf2.dev';
+              return undefined;
+            },
+          },
+        },
+      ],
+    }).compile();
+
+    const withTestName = module.get(PasskeysService);
+    credentialRepository.findByUserId.mockResolvedValue([]);
+    await withTestName.getRegistrationOptions('user-1');
+    expect(generateRegistrationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ rpName: 'Medicail', rpID: 'medicail.nf2.dev' }),
+    );
   });
 
   it('verifyRegistration consumes the challenge then stores the credential', async () => {

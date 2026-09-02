@@ -19,6 +19,7 @@ WORKDIR /app
 
 ARG APP=api
 ENV APP=${APP}
+ENV NODE_ENV=production
 ENV HUSKY=0
 
 COPY package.json pnpm-lock.yaml ./
