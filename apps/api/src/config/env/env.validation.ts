@@ -1,7 +1,16 @@
 import { plainToInstance } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 
-const PRODUCTION_REQUIRED_KEYS = ['APP_PUBLIC_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'WEBAUTHN_RP_ID', 'WEBAUTHN_ORIGIN'] as const;
+const PRODUCTION_REQUIRED_KEYS = [
+  'APP_PUBLIC_URL',
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'SMTP_FROM',
+  'WEBAUTHN_RP_ID',
+  'WEBAUTHN_ORIGIN',
+] as const;
 
 class EnvironmentVariables {
   @IsInt()
