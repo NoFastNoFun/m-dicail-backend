@@ -14,6 +14,7 @@ import { PubmedModule } from './features/pubmed/pubmed.module';
 import { NotesModule } from './features/notes/notes.module';
 import { MedicalWatchModule } from './features/medical-watch/medical-watch.module';
 import { HealthModule } from './features/health/health.module';
+import { DeeplinkModule } from './features/deeplink/deeplink.module';
 import { ExercisesModule } from './features/exercises/exercises.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { ExercisesModule } from './features/exercises/exercises.module';
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     HealthModule,
+    DeeplinkModule,
     UsersModule,
     AuthModule,
     PatientsModule,

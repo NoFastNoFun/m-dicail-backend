@@ -45,7 +45,8 @@ Then fill in the values in `.env` :
 | `POSTGRES_DB` | PostgreSQL database name |
 | `NCBI_API_KEY` | *(optional)* PubMed API key — without it rate limit is 3 req/s instead of 10. Get one at https://www.ncbi.nlm.nih.gov/account/ |
 | `NCBI_EMAIL` | *(optional)* Contact email sent with NCBI E-utilities requests |
-| `APP_PUBLIC_URL` | Public app URL for password-reset and account-recovery links in emails (e.g. `https://medicail.nf2.tech`) |
+| `APP_PUBLIC_URL` | Public HTTPS origin for password-reset and account-recovery links in emails (e.g. `https://medicail.nf2.tech`). Serves an HTML bounce into the native app — not a web product. |
+| `APP_DEEPLINK_SCHEME` | Custom URL scheme opened by the bounce page (default `medicail` → `medicail://reset-password?token=…`) |
 | `SMTP_HOST` | Outbound mail host — Proton: `smtp.proton.me`; Bridge: `127.0.0.1`. Required to send reset/recovery mail |
 | `SMTP_PORT` | SMTP port — `587` (Proton STARTTLS) or `1025` (Proton Bridge) |
 | `SMTP_USER` | SMTP username |
@@ -231,9 +232,16 @@ SMTP_USER=your-address@proton.me
 SMTP_PASS=your-smtp-token
 SMTP_FROM=Medicail <your-address@proton.me>
 APP_PUBLIC_URL=https://medicail.nf2.tech
+APP_DEEPLINK_SCHEME=medicail
 ```
 
 Generate the SMTP token in Proton Mail → Settings → Proton Mail → IMAP/SMTP → SMTP tokens.
+
+### Password reset / recovery links (native app)
+
+Emails still use HTTPS (`${APP_PUBLIC_URL}/reset-password?token=…`) so mail clients keep a clickable link. Nginx proxies `GET /reset-password` and `GET /recovery` to the API, which returns a small HTML page that redirects to `${APP_DEEPLINK_SCHEME}://reset-password?token=…` (and the same for recovery). The Flutter app registers that custom scheme and navigates to the in-app reset/recovery screens.
+
+There is no web UI for reset. The real password change remains `POST /api/v1/auth/reset-password`.
 
 ### Proton Bridge (local dev)
 
@@ -244,6 +252,7 @@ SMTP_USER=your-bridge-user
 SMTP_PASS=your-bridge-password
 SMTP_FROM=dev@medicail.test
 APP_PUBLIC_URL=http://localhost:3000
+APP_DEEPLINK_SCHEME=medicail
 ```
 
 ### WebAuthn / passkeys
