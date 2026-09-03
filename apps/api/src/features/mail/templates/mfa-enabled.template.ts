@@ -4,9 +4,7 @@ export function buildMfaEnabledEmail(params: { appName?: string }): { subject: s
   const appName = params.appName ?? 'Medicail';
   const bodyHtml = [
     emailParagraph(`Bonjour,`),
-    emailParagraph(
-      `L'authentification a deux facteurs (TOTP) a ete activee sur votre compte ${appName}.`,
-    ),
+    emailParagraph(`L'authentification a deux facteurs (TOTP) a ete activee sur votre compte ${appName}.`),
     emailMutedParagraph(
       `Conservez vos codes de recuperation en lieu sur. Ils vous permettront de retrouver l'acces si vous perdez votre application d'authentification.`,
     ),

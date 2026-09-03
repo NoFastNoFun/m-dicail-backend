@@ -1,30 +1,16 @@
-import {
-  buildEmailButton,
-  buildEmailShell,
-  emailMutedParagraph,
-  emailParagraph,
-} from './email-layout.template';
+import { buildEmailButton, buildEmailShell, emailMutedParagraph, emailParagraph } from './email-layout.template';
 
-export function buildAccountRecoveryEmail(params: {
-  recoveryUrl: string;
-  appName?: string;
-}): { subject: string; html: string } {
+export function buildAccountRecoveryEmail(params: { recoveryUrl: string; appName?: string }): { subject: string; html: string } {
   const appName = params.appName ?? 'Medicail';
   const bodyHtml = [
     emailParagraph(`Bonjour,`),
-    emailParagraph(
-      `Vous avez demande la recuperation de votre compte ${appName}. Cliquez sur le bouton ci-dessous pour continuer.`,
-    ),
+    emailParagraph(`Vous avez demande la recuperation de votre compte ${appName}. Cliquez sur le bouton ci-dessous pour continuer.`),
     buildEmailButton({
       href: params.recoveryUrl,
       label: 'Recuperer mon compte',
     }),
-    emailMutedParagraph(
-      `Ce lien expire dans 1 heure. La recuperation desactivera l'authentification TOTP sur votre compte.`,
-    ),
-    emailMutedParagraph(
-      `Si vous n'etes pas a l'origine de cette demande, ignorez cet e-mail.`,
-    ),
+    emailMutedParagraph(`Ce lien expire dans 1 heure. La recuperation desactivera l'authentification TOTP sur votre compte.`),
+    emailMutedParagraph(`Si vous n'etes pas a l'origine de cette demande, ignorez cet e-mail.`),
   ].join('\n');
 
   return {

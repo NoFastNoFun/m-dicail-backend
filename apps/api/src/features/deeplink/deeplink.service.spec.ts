@@ -11,9 +11,7 @@ describe('DeeplinkService', () => {
   });
 
   it('builds a custom-scheme reset URL with an encoded token', () => {
-    expect(service.buildAppUrl('reset-password', 'id.secret+value')).toBe(
-      'medicail://reset-password?token=id.secret%2Bvalue',
-    );
+    expect(service.buildAppUrl('reset-password', 'id.secret+value')).toBe('medicail://reset-password?token=id.secret%2Bvalue');
   });
 
   it('builds a recovery URL without a token', () => {
