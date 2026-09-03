@@ -88,6 +88,19 @@ describe('MailService', () => {
       }),
     );
     expect(service.getPublicAppUrl()).toBe('http://localhost:3000');
+    expect(service.getDeeplinkScheme()).toBe('medicail');
+  });
+
+  it('reads APP_DEEPLINK_SCHEME when set', () => {
+    process.env.NODE_ENV = 'test';
+    const service = new MailService({
+      get: (key: string) => {
+        if (key === 'APP_DEEPLINK_SCHEME') return 'medicail-dev';
+        return undefined;
+      },
+    } as unknown as ConfigService);
+
+    expect(service.getDeeplinkScheme()).toBe('medicail-dev');
   });
 
   it('uses SMTP_USER as from when SMTP_FROM is empty', async () => {

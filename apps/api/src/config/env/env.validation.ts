@@ -75,6 +75,10 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  declare APP_DEEPLINK_SCHEME?: string;
+
+  @IsString()
+  @IsOptional()
   declare CORS_ORIGINS?: string;
 
   @IsString()

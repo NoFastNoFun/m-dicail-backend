@@ -73,6 +73,10 @@ export class MailService {
     return this.readNonEmpty('APP_PUBLIC_URL') ?? 'http://localhost:3000';
   }
 
+  getDeeplinkScheme(): string {
+    return this.readNonEmpty('APP_DEEPLINK_SCHEME') ?? 'medicail';
+  }
+
   private readNonEmpty(key: string): string | undefined {
     const value = this.configService.get<string | number>(key);
     if (value === undefined || value === null) {
