@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { PatientsService } from '@features/patients/services/patients.service';
 import { SessionsService } from './sessions.service';
 import { RecordingSessionRepository } from '../repositories/recording-session.repository';
 import { RecordingSession } from '../entities/recording-session.entity';
@@ -8,6 +9,7 @@ import { SessionStatus } from '../enums/session-status.enum';
 describe('SessionsService', () => {
   let service: SessionsService;
   let repository: jest.Mocked<RecordingSessionRepository>;
+  let patientsService: { getOne: jest.Mock };
 
   const userId = 'user-1';
   const now = new Date('2024-06-01');
@@ -22,6 +24,8 @@ describe('SessionsService', () => {
     transcript: 'Hello',
     soapNote: null,
     summary: null,
+    templateId: null,
+    templateName: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -33,8 +37,12 @@ describe('SessionsService', () => {
       findByPatientForUser: jest.fn(),
     } as unknown as jest.Mocked<RecordingSessionRepository>;
 
+    patientsService = {
+      getOne: jest.fn().mockResolvedValue({ id: 'patient_abc' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SessionsService, { provide: RecordingSessionRepository, useValue: repository }],
+      providers: [SessionsService, { provide: RecordingSessionRepository, useValue: repository }, { provide: PatientsService, useValue: patientsService }],
     }).compile();
 
     service = module.get(SessionsService);
@@ -42,14 +50,14 @@ describe('SessionsService', () => {
 
   describe('create', () => {
     it('creates a session with defaults', async () => {
-      repository.save.mockResolvedValue(mockSession);
+      repository.save.mockResolvedValue({ ...mockSession, patientId: null });
 
-      const result = await service.create(userId, { patient_id: 'patient_abc', transcript: 'Hello' });
+      const result = await service.create(userId, { transcript: 'Hello' });
 
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           userId,
-          patientId: 'patient_abc',
+          patientId: null,
           status: SessionStatus.RECORDING,
           transcript: 'Hello',
         }),
@@ -112,6 +120,24 @@ describe('SessionsService', () => {
       expect(result.soap_note).toEqual({ subjective: 'pain' });
       expect(result.patient_id).toBe('patient_new');
       expect(result.transcript).toBe('Updated transcript');
+    });
+
+    it('updates template_id and template_name', async () => {
+      const updated = {
+        ...mockSession,
+        templateId: 'builtin_low_back_pain',
+        templateName: 'Lombalgie',
+      };
+      repository.findByIdForUser.mockResolvedValue(mockSession);
+      repository.save.mockResolvedValue(updated);
+
+      const result = await service.update(userId, mockSession.id, {
+        template_id: 'builtin_low_back_pain',
+        template_name: 'Lombalgie',
+      });
+
+      expect(result.template_id).toBe('builtin_low_back_pain');
+      expect(result.template_name).toBe('Lombalgie');
     });
 
     it('throws SessionNotFoundException when session does not exist', async () => {

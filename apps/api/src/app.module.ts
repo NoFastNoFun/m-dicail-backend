@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -14,6 +14,7 @@ import { PubmedModule } from './features/pubmed/pubmed.module';
 import { NotesModule } from './features/notes/notes.module';
 import { MedicalWatchModule } from './features/medical-watch/medical-watch.module';
 import { HealthModule } from './features/health/health.module';
+import { DeeplinkModule } from './features/deeplink/deeplink.module';
 import { ExercisesModule } from './features/exercises/exercises.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { ExercisesModule } from './features/exercises/exercises.module';
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     HealthModule,
+    DeeplinkModule,
     UsersModule,
     AuthModule,
     PatientsModule,
@@ -33,6 +35,9 @@ import { ExercisesModule } from './features/exercises/exercises.module';
     MedicalWatchModule,
     ExercisesModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { MedicalWatchService } from './medical-watch.service';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
+import { UsersService } from '@features/users/services/users.service';
+import { MailService } from '../../mail/services/mail.service';
 import { MedicalWatchArticle } from '../entities/medical-watch-article.entity';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
 
@@ -10,6 +12,11 @@ describe('MedicalWatchService', () => {
   let service: MedicalWatchService;
   let pubmedService: jest.Mocked<PubmedService>;
   let repository: jest.Mocked<MedicalWatchRepository>;
+  let usersService: {
+    findById: jest.Mock;
+    findDigestOptInUsers: jest.Mock;
+    updateDigestOptIn: jest.Mock;
+  };
 
   const mockArticle: MedicalWatchArticle = {
     pmid: '12345',
@@ -43,10 +50,27 @@ describe('MedicalWatchService', () => {
     repository = {
       findAll: jest.fn(),
       upsertArticles: jest.fn(),
+      count: jest.fn().mockResolvedValue(1),
     } as unknown as jest.Mocked<MedicalWatchRepository>;
 
+    usersService = {
+      findById: jest.fn(),
+      findDigestOptInUsers: jest.fn().mockResolvedValue([]),
+      updateDigestOptIn: jest.fn(),
+    };
+
+    const mailService = {
+      sendMail: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MedicalWatchService, { provide: PubmedService, useValue: pubmedService }, { provide: MedicalWatchRepository, useValue: repository }],
+      providers: [
+        MedicalWatchService,
+        { provide: PubmedService, useValue: pubmedService },
+        { provide: MedicalWatchRepository, useValue: repository },
+        { provide: UsersService, useValue: usersService },
+        { provide: MailService, useValue: mailService },
+      ],
     }).compile();
 
     service = module.get(MedicalWatchService);
@@ -54,6 +78,7 @@ describe('MedicalWatchService', () => {
     // Suppress logger output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
   });
 
   afterEach(() => {
@@ -188,6 +213,66 @@ describe('MedicalWatchService', () => {
       await expect(service.runManually()).resolves.not.toThrow();
 
       expect(Logger.prototype.error).toHaveBeenCalledTimes(4);
+    });
+
+    it('should skip upsert when PubMed returns no articles', async () => {
+      pubmedService.search.mockResolvedValue([]);
+
+      await service.runManually();
+
+      expect(pubmedService.search).toHaveBeenCalledTimes(4);
+      expect(repository.upsertArticles).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onModuleInit', () => {
+    it('should seed when the table is empty', async () => {
+      repository.count.mockResolvedValue(0);
+      pubmedService.search.mockResolvedValue([
+        {
+          pmid: '12345',
+          title: 'Test Article',
+          abstract: 'Test abstract',
+          authors: ['Author 1'],
+          publication_date: '2024-01-01',
+          doi: null,
+        },
+      ]);
+
+      await service.onModuleInit();
+      // Allow the fire-and-forget promise to settle
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(repository.count).toHaveBeenCalled();
+      expect(pubmedService.search).toHaveBeenCalled();
+    });
+
+    it('should not seed when articles already exist', async () => {
+      repository.count.mockResolvedValue(5);
+
+      await service.onModuleInit();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(repository.count).toHaveBeenCalled();
+      expect(pubmedService.search).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('preferences and digest', () => {
+    it('getPreferences returns false when the user is missing', async () => {
+      usersService.findById.mockResolvedValue(null);
+      await expect(service.getPreferences('user-1')).resolves.toEqual({ digestOptIn: false });
+    });
+
+    it('updatePreferences persists the flag', async () => {
+      usersService.updateDigestOptIn.mockResolvedValue({ medicalWatchDigestOptIn: true });
+      await expect(service.updatePreferences('user-1', true)).resolves.toEqual({ digestOptIn: true });
+    });
+
+    it('sendDailyDigest logs opted-in users', async () => {
+      usersService.findDigestOptInUsers.mockResolvedValue([{ id: 'user-1' }]);
+      await service.sendDailyDigest();
+      expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('1 opted-in'));
     });
   });
 });

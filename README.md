@@ -44,6 +44,17 @@ Then fill in the values in `.env` :
 | `POSTGRES_PASSWORD` | PostgreSQL password |
 | `POSTGRES_DB` | PostgreSQL database name |
 | `NCBI_API_KEY` | *(optional)* PubMed API key — without it rate limit is 3 req/s instead of 10. Get one at https://www.ncbi.nlm.nih.gov/account/ |
+| `NCBI_EMAIL` | *(optional)* Contact email sent with NCBI E-utilities requests |
+| `APP_PUBLIC_URL` | Public HTTPS origin for password-reset and account-recovery links in emails (e.g. `https://medicail.nf2.tech`). Serves an HTML bounce into the native app — not a web product. |
+| `APP_DEEPLINK_SCHEME` | Custom URL scheme opened by the bounce page (default `medicail` → `medicail://reset-password?token=…`) |
+| `SMTP_HOST` | Outbound mail host — Proton: `smtp.proton.me`; Bridge: `127.0.0.1`. Required to send reset/recovery mail |
+| `SMTP_PORT` | SMTP port — `587` (Proton STARTTLS) or `1025` (Proton Bridge) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password or Proton SMTP token |
+| `SMTP_FROM` | From address (e.g. `Medicail <noreply@example.com>`) |
+| `WEBAUTHN_RP_ID` | Passkey relying party ID — must match the app host (e.g. `medicail.nf2.tech`) |
+| `WEBAUTHN_RP_NAME` | Passkey display name shown to users (default: `Medicail`) |
+| `WEBAUTHN_ORIGIN` | Passkey origin URL (e.g. `https://medicail.nf2.tech`) |
 
 > Never commit `.env` to git.
 
@@ -134,8 +145,13 @@ Managed with **TypeORM** — one file per domain, located in `apps/api/src/migra
 
 | File | Description |
 |---|---|
-| `1750000000000-Init.ts` | Creates `users`, `patients`, `recording_sessions` tables |
-| `1782811334916-AddRoleToUsers.ts` | Adds `role` (enum: PRATICIEN/PATIENT) and `patient_id` columns to `users` |
+| `init-core-schema.ts` | Creates `users`, `patients`, `recording_sessions` tables |
+| `create-appointments.ts` | Creates `appointments` table |
+| `add-medical-watch.ts` | Creates `medical_watch_articles` table |
+| `add-refresh-token-to-user.ts` | Adds refresh token columns to `users` |
+| `add-role-to-users.ts` | Adds `role` (enum: PRATICIEN/PATIENT) and `patient_id` columns to `users` |
+| `add-exercises.ts` | Creates `exercises` and `patient_exercises` tables |
+| `add-template-to-recording-sessions.ts` | Adds `template_id` and `template_name` to `recording_sessions` |
 
 Generate a new migration:
 ```bash
@@ -202,3 +218,67 @@ Il y a deux APIs NCBI distinctes :
 - **PMC (PubMed Central)** — donne accès au texte complet des articles, mais uniquement pour les publications open access (~40% du catalogue). Les 60% restants sont bloqués par les journaux payants (Elsevier, Springer, etc.). → [Documentation PMC](https://www.ncbi.nlm.nih.gov/pmc/tools/developers/)
 
 Pour le POC on part sur E-utilities (abstracts uniquement) pour valider que ça suffit à l'IA pour générer des recommandations pertinentes. Si les abstracts s'avèrent insuffisants, on pourra compléter avec PMC pour les articles open access.
+
+## Email (Proton SMTP)
+
+Outbound mail uses nodemailer via `MailModule`. Missing SMTP makes password-reset return 503, except in tests or when `MAIL_SKIP=true` (local only). Production requires SMTP and never skips.
+
+### Proton hosted SMTP (production / test)
+
+```env
+SMTP_HOST=smtp.proton.me
+SMTP_PORT=587
+SMTP_USER=your-address@proton.me
+SMTP_PASS=your-smtp-token
+SMTP_FROM=Medicail <your-address@proton.me>
+APP_PUBLIC_URL=https://medicail.nf2.tech
+APP_DEEPLINK_SCHEME=medicail
+```
+
+Generate the SMTP token in Proton Mail → Settings → Proton Mail → IMAP/SMTP → SMTP tokens.
+
+### Password reset / recovery links (native app)
+
+Emails still use HTTPS (`${APP_PUBLIC_URL}/reset-password?token=…`) so mail clients keep a clickable link. Nginx proxies `GET /reset-password` and `GET /recovery` to the API, which returns a small HTML page that redirects to `${APP_DEEPLINK_SCHEME}://reset-password?token=…` (and the same for recovery). The Flutter app registers that custom scheme and navigates to the in-app reset/recovery screens.
+
+There is no web UI for reset. The real password change remains `POST /api/v1/auth/reset-password`.
+
+### Proton Bridge (local dev)
+
+```env
+SMTP_HOST=127.0.0.1
+SMTP_PORT=1025
+SMTP_USER=your-bridge-user
+SMTP_PASS=your-bridge-password
+SMTP_FROM=dev@medicail.test
+APP_PUBLIC_URL=http://localhost:3000
+APP_DEEPLINK_SCHEME=medicail
+```
+
+### WebAuthn / passkeys
+
+```env
+WEBAUTHN_RP_ID=medicail.nf2.tech
+WEBAUTHN_RP_NAME=Medicail
+WEBAUTHN_ORIGIN=https://medicail.nf2.tech
+```
+
+### Auth endpoints (extended)
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/v1/auth/forgot-password` | ❌ | Request password reset email |
+| POST | `/api/v1/auth/reset-password` | ❌ | Reset password with token |
+| POST | `/api/v1/auth/recovery/request` | ❌ | Request account recovery (disable TOTP) |
+| POST | `/api/v1/auth/recovery/confirm` | ❌ | Confirm recovery token |
+| POST | `/api/v1/auth/mfa/verify` | ❌ | Complete login after TOTP/recovery code |
+| POST | `/api/v1/auth/mfa/enroll` | ✅ | Start TOTP enrollment |
+| POST | `/api/v1/auth/mfa/confirm` | ✅ | Confirm TOTP + get recovery codes |
+| POST | `/api/v1/auth/mfa/disable` | ✅ | Disable TOTP |
+| POST | `/api/v1/auth/passkeys/register/options` | ✅ | WebAuthn registration options |
+| POST | `/api/v1/auth/passkeys/register/verify` | ✅ | Verify passkey registration |
+| POST | `/api/v1/auth/passkeys/authenticate/options` | ❌ | Passkey login options |
+| POST | `/api/v1/auth/passkeys/authenticate/verify` | ❌ | Passkey login verify |
+| GET | `/api/v1/auth/passkeys` | ✅ | List passkeys |
+| DELETE | `/api/v1/auth/passkeys/:id` | ✅ | Remove passkey |
+| GET/PATCH | `/api/v1/medical-watch/preferences` | ✅ | Digest opt-in (email CRON stub at 07:00 Paris) |

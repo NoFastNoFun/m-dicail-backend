@@ -30,4 +30,13 @@ export class User {
 
   @Column({ name: 'refresh_token_expires_at', type: 'timestamptz', nullable: true })
   declare refreshTokenExpiresAt: Date | null;
+
+  @Column({ name: 'mfa_enabled', type: 'boolean', default: false })
+  declare mfaEnabled: boolean;
+
+  @Column({ name: 'totp_secret', type: 'varchar', nullable: true })
+  declare totpSecret: string | null;
+
+  @Column({ name: 'medical_watch_digest_opt_in', type: 'boolean', default: false })
+  declare medicalWatchDigestOptIn: boolean;
 }

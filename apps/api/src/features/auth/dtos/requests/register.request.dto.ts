@@ -19,4 +19,9 @@ export class RegisterRequestDto {
   @IsOptional()
   @IsString()
   declare fullName?: string;
+
+  @ApiProperty({ required: false, description: 'Required when REGISTRATION_INVITE_CODE is set' })
+  @IsOptional()
+  @IsString()
+  declare inviteCode?: string;
 }

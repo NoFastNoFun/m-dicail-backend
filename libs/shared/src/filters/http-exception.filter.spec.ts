@@ -50,4 +50,15 @@ describe('HttpExceptionFilter', () => {
       }),
     );
   });
+
+  it('formats unknown errors as 500', () => {
+    filter.catch(new Error('boom'), host);
+
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Internal server error',
+    });
+  });
 });

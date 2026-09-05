@@ -168,6 +168,24 @@ describe('ExercisesService', () => {
       expect(result.name).toBe('Test Exercise');
       expect(exerciseRepository.save).toHaveBeenCalled();
     });
+
+    it('should default missing media urls to null', async () => {
+      exerciseRepository.save.mockResolvedValue(mockExercise);
+
+      await service.createExercise({
+        name: 'New Exercise',
+        description: 'New Description',
+        category: 'New Category',
+        instructions: 'New Instructions',
+      });
+
+      expect(exerciseRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          videoUrl: null,
+          imageUrl: null,
+        }),
+      );
+    });
   });
 
   describe('updateExercise', () => {
@@ -281,6 +299,28 @@ describe('ExercisesService', () => {
       expect(patientExerciseRepository.save).toHaveBeenCalled();
     });
 
+    it('should default omitted assignment fields to null', async () => {
+      const dto = {
+        patientId: 'patient_123',
+        exerciseId: 'exercise_123',
+      };
+
+      patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
+      exerciseRepository.findById.mockResolvedValue(mockExercise);
+      patientExerciseRepository.save.mockResolvedValue(mockPatientExercise);
+
+      await service.assignExercise('1', dto);
+
+      expect(patientExerciseRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          notes: null,
+          sets: null,
+          reps: null,
+          frequency: null,
+        }),
+      );
+    });
+
     it('should throw PatientNotFoundException when patient not found', async () => {
       const dto = {
         patientId: 'invalid_patient',
@@ -334,6 +374,23 @@ describe('ExercisesService', () => {
       expect(result.notes).toBe('Updated notes');
       expect(patientExerciseRepository.findByIdForUser).toHaveBeenCalledWith('1', 'patient_exercise_123');
       expect(patientExerciseRepository.save).toHaveBeenCalled();
+    });
+
+    it('should keep existing fields when the patch is empty', async () => {
+      patientExerciseRepository.findByIdForUser.mockResolvedValue(mockPatientExercise);
+      patientExerciseRepository.save.mockResolvedValue(mockPatientExercise);
+
+      await service.updatePatientExercise('1', 'patient_exercise_123', {});
+
+      expect(patientExerciseRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: mockPatientExercise.status,
+          notes: mockPatientExercise.notes,
+          sets: mockPatientExercise.sets,
+          reps: mockPatientExercise.reps,
+          frequency: mockPatientExercise.frequency,
+        }),
+      );
     });
 
     it('should throw PatientExerciseNotFoundException when not found', async () => {
