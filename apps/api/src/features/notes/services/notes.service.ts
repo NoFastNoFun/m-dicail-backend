@@ -4,20 +4,27 @@ import { NoteSummarizeRequestDto } from '../dtos/requests/note-summarize.request
 import { NoteProcessResponseDto } from '../dtos/responses/note-process.response.dto';
 import { NoteSummarizeResponseDto } from '../dtos/responses/note-summarize.response.dto';
 import { SoapClassifierService } from './soap-classifier.service';
+import { AnonymizationService } from './anonymization.service';
 
 @Injectable()
 export class NotesService {
-  constructor(private readonly soapClassifier: SoapClassifierService) {}
+  constructor(
+    private readonly soapClassifier: SoapClassifierService,
+    private readonly anonymization: AnonymizationService,
+  ) {}
 
   process(dto: NoteProcessRequestDto): NoteProcessResponseDto {
+    const { anonymizedText } = this.anonymization.anonymize(dto.raw_text);
+
     return {
       session_id: dto.session_id,
-      processed_text: dto.raw_text,
-      soap_note: this.soapClassifier.classify(dto.raw_text),
+      processed_text: anonymizedText,
+      soap_note: this.soapClassifier.classify(anonymizedText),
     };
   }
 
   summarize(dto: NoteSummarizeRequestDto): NoteSummarizeResponseDto {
-    return { summary: dto.processed_text.slice(0, 20) };
+    const { anonymizedText } = this.anonymization.anonymize(dto.processed_text);
+    return { summary: anonymizedText.slice(0, 20) };
   }
 }
