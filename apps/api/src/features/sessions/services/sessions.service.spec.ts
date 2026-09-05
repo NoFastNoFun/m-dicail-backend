@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PatientsService } from '@features/patients/services/patients.service';
+import { AnonymizationService } from '@features/notes/services/anonymization.service';
 import { SessionsService } from './sessions.service';
 import { RecordingSessionRepository } from '../repositories/recording-session.repository';
 import { RecordingSession } from '../entities/recording-session.entity';
@@ -13,6 +14,15 @@ describe('SessionsService', () => {
 
   const userId = 'user-1';
   const now = new Date('2024-06-01');
+
+  const mockPatient = {
+    id: 'patient_abc',
+    first_name: 'Marie',
+    last_name: 'Dupont',
+    mrn: 'MRN12345',
+    birth_date: '1990-05-02',
+    contact: { email: 'marie.dupont@example.com', phone: '0612345678' },
+  };
 
   const mockSession: RecordingSession = {
     id: 'recording_abc',
@@ -38,11 +48,16 @@ describe('SessionsService', () => {
     } as unknown as jest.Mocked<RecordingSessionRepository>;
 
     patientsService = {
-      getOne: jest.fn().mockResolvedValue({ id: 'patient_abc' }),
+      getOne: jest.fn().mockResolvedValue(mockPatient),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SessionsService, { provide: RecordingSessionRepository, useValue: repository }, { provide: PatientsService, useValue: patientsService }],
+      providers: [
+        SessionsService,
+        AnonymizationService,
+        { provide: RecordingSessionRepository, useValue: repository },
+        { provide: PatientsService, useValue: patientsService },
+      ],
     }).compile();
 
     service = module.get(SessionsService);
@@ -80,6 +95,21 @@ describe('SessionsService', () => {
           status: SessionStatus.DRAFT,
         }),
       );
+    });
+
+    it('anonymise le transcript avant sauvegarde', async () => {
+      repository.save.mockImplementation(async (data) => data as RecordingSession);
+
+      await service.create(userId, {
+        patient_id: 'patient_abc',
+        transcript: 'Marie Dupont se plaint de lombalgie, joindre au 06 12 34 56 78',
+      });
+
+      const saved = repository.save.mock.calls[0][0];
+      expect(saved.transcript).not.toContain('Marie');
+      expect(saved.transcript).not.toContain('Dupont');
+      expect(saved.transcript).not.toContain('06 12 34 56 78');
+      expect(saved.transcript).toContain('lombalgie');
     });
   });
 
@@ -122,6 +152,21 @@ describe('SessionsService', () => {
       expect(result.transcript).toBe('Updated transcript');
     });
 
+    it('anonymise transcript et soap_note avant sauvegarde', async () => {
+      repository.findByIdForUser.mockResolvedValue(mockSession);
+      repository.save.mockImplementation(async (data) => data as RecordingSession);
+
+      await service.update(userId, mockSession.id, {
+        transcript: 'Madame Dupont a mal au genou',
+        soap_note: { subjective: 'Marie Dupont douleur cervicale' },
+      });
+
+      const saved = repository.save.mock.calls[0][0];
+      expect(saved.transcript).not.toContain('Dupont');
+      expect(saved.soapNote?.subjective).not.toContain('Marie');
+      expect(saved.soapNote?.subjective).not.toContain('Dupont');
+    });
+
     it('updates template_id and template_name', async () => {
       const updated = {
         ...mockSession,
@@ -156,6 +201,25 @@ describe('SessionsService', () => {
       const result = await service.associatePatient(userId, mockSession.id, { patient_id: 'patient_new' });
 
       expect(result.patient_id).toBe('patient_new');
+    });
+
+    it('re-scrub le transcript existant lors de l association patient', async () => {
+      const dirty: RecordingSession = {
+        ...mockSession,
+        patientId: null,
+        transcript: 'Marie Dupont se plaint de lombalgie',
+      };
+      repository.findByIdForUser.mockResolvedValue(dirty);
+      repository.save.mockImplementation(async (data) => data as RecordingSession);
+      patientsService.getOne.mockResolvedValue({ ...mockPatient, id: 'patient_new' });
+
+      await service.associatePatient(userId, dirty.id, { patient_id: 'patient_new' });
+
+      const saved = repository.save.mock.calls[0][0];
+      expect(saved.patientId).toBe('patient_new');
+      expect(saved.transcript).not.toContain('Marie');
+      expect(saved.transcript).not.toContain('Dupont');
+      expect(saved.transcript).toContain('lombalgie');
     });
 
     it('throws SessionNotFoundException when session does not exist', async () => {

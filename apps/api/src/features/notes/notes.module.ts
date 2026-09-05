@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AnonymizationModule } from './anonymization.module';
 import { NotesController } from './notes.controller';
 import { NotesService } from './services/notes.service';
 import { SoapClassifierService } from './services/soap-classifier.service';
-import { AnonymizationService } from './services/anonymization.service';
 
 @Module({
+  imports: [AnonymizationModule],
   controllers: [NotesController],
-  providers: [NotesService, SoapClassifierService, AnonymizationService],
+  providers: [NotesService, SoapClassifierService],
 })
 export class NotesModule {}

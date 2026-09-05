@@ -24,6 +24,7 @@ export class NotesService {
   }
 
   summarize(dto: NoteSummarizeRequestDto): NoteSummarizeResponseDto {
-    return { summary: dto.processed_text.slice(0, 20) };
+    const { anonymizedText } = this.anonymization.anonymize(dto.processed_text);
+    return { summary: anonymizedText.slice(0, 20) };
   }
 }
