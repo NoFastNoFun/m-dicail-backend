@@ -137,6 +137,41 @@ describe('PatientsService', () => {
 
       await expect(service.update(userId, 'missing', { mrn: 'MRN001', first_name: 'Jane', last_name: 'Doe' })).rejects.toThrow(PatientNotFoundException);
     });
+
+    it('preserves existing optional fields omitted from the request body', async () => {
+      repository.findByIdForUser.mockResolvedValue(mockPatient);
+      repository.save.mockResolvedValue(mockPatient);
+
+      await service.update(userId, mockPatient.id, {
+        mrn: 'MRN001',
+        first_name: 'Jane',
+        last_name: 'Doe',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          birthDate: mockPatient.birthDate,
+          sex: mockPatient.sex,
+          contact: mockPatient.contact,
+          notes: mockPatient.notes,
+          patientMetadata: mockPatient.patientMetadata,
+        }),
+      );
+    });
+
+    it('clears an optional field when explicitly sent as null', async () => {
+      repository.findByIdForUser.mockResolvedValue(mockPatient);
+      repository.save.mockResolvedValue({ ...mockPatient, notes: null });
+
+      await service.update(userId, mockPatient.id, {
+        mrn: 'MRN001',
+        first_name: 'Jane',
+        last_name: 'Doe',
+        notes: null as unknown as undefined,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ notes: null }));
+    });
   });
 
   describe('delete', () => {

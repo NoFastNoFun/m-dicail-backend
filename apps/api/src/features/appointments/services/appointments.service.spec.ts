@@ -167,7 +167,7 @@ describe('AppointmentsService', () => {
       expect(appointmentRepository.save).toHaveBeenCalled();
     });
 
-    it('keeps existing status when dto status omitted', async () => {
+    it('keeps existing status, ends_at and notes when omitted from the request body', async () => {
       appointmentRepository.findByIdForUser.mockResolvedValue(mockAppointment);
       patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
       appointmentRepository.save.mockResolvedValue(mockAppointment);
@@ -180,10 +180,25 @@ describe('AppointmentsService', () => {
       expect(appointmentRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           status: AppointmentStatus.SCHEDULED,
-          endsAt: null,
-          notes: null,
+          endsAt: mockAppointment.endsAt,
+          notes: mockAppointment.notes,
         }),
       );
+    });
+
+    it('clears ends_at and notes when explicitly sent as null', async () => {
+      appointmentRepository.findByIdForUser.mockResolvedValue(mockAppointment);
+      patientRepository.findByIdForUser.mockResolvedValue(mockPatient);
+      appointmentRepository.save.mockResolvedValue({ ...mockAppointment, endsAt: null, notes: null });
+
+      await service.update(userId, mockAppointment.id, {
+        patient_id: 'patient_abc',
+        starts_at: '2026-07-21T10:00:00.000Z',
+        ends_at: null as unknown as undefined,
+        notes: null as unknown as undefined,
+      });
+
+      expect(appointmentRepository.save).toHaveBeenCalledWith(expect.objectContaining({ endsAt: null, notes: null }));
     });
 
     it('throws when appointment not found', async () => {
