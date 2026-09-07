@@ -36,6 +36,7 @@ describe('SessionsService', () => {
     summary: null,
     templateId: null,
     templateName: null,
+    pathologies: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -183,6 +184,30 @@ describe('SessionsService', () => {
 
       expect(result.template_id).toBe('builtin_low_back_pain');
       expect(result.template_name).toBe('Lombalgie');
+    });
+
+    it('updates pathologies list', async () => {
+      const pathologies = [
+        { id: 'path_low_back_pain', name: 'Lombalgie', template_id: 'builtin_low_back_pain' },
+        { id: 'path_neck_pain', name: 'Cervicalgie', template_id: 'builtin_neck_pain' },
+      ];
+      const updated = {
+        ...mockSession,
+        templateId: 'builtin_low_back_pain',
+        templateName: 'Lombalgie',
+        pathologies,
+      };
+      repository.findByIdForUser.mockResolvedValue(mockSession);
+      repository.save.mockResolvedValue(updated);
+
+      const result = await service.update(userId, mockSession.id, {
+        template_id: 'builtin_low_back_pain',
+        template_name: 'Lombalgie',
+        pathologies,
+      });
+
+      expect(result.pathologies).toEqual(pathologies);
+      expect(repository.save.mock.calls[0][0].pathologies).toEqual(pathologies);
     });
 
     it('throws SessionNotFoundException when session does not exist', async () => {
