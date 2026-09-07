@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RecordingSession, SoapNote } from '../../entities/recording-session.entity';
+import { RecordingSession, SessionPathology, SoapNote } from '../../entities/recording-session.entity';
 
 export class SessionResponseDto {
   @ApiProperty() declare id: string;
@@ -13,6 +13,8 @@ export class SessionResponseDto {
   @ApiProperty({ nullable: true }) declare summary: string | null;
   @ApiProperty({ nullable: true }) declare template_id: string | null;
   @ApiProperty({ nullable: true }) declare template_name: string | null;
+  @ApiProperty({ nullable: true, type: 'array' })
+  declare pathologies: SessionPathology[] | null;
   @ApiProperty() declare created_at: Date;
   @ApiProperty() declare updated_at: Date;
 
@@ -28,6 +30,7 @@ export class SessionResponseDto {
     this.summary = session.summary;
     this.template_id = session.templateId;
     this.template_name = session.templateName;
+    this.pathologies = session.pathologies;
     this.created_at = session.createdAt;
     this.updated_at = session.updatedAt;
   }

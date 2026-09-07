@@ -19,6 +19,7 @@ describe('SessionsController', () => {
     summary: null,
     template_id: null,
     template_name: null,
+    pathologies: null,
     created_at: new Date(),
     updated_at: new Date(),
   };
