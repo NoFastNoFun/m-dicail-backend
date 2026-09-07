@@ -6,6 +6,7 @@ import { AddRoleToUsers1782811334916 } from './add-role-to-users';
 import { AddExercises1783000000000 } from './add-exercises';
 import { AddTemplateToRecordingSessions1784000000000 } from './add-template-to-recording-sessions';
 import { AddAuthMfaPasskeys1785000000000 } from './add-auth-mfa-passkeys';
+import { AddPatientFkAppointmentsSessions1786000000000 } from './add-patient-fk-appointments-sessions';
 
 export const migrations = [
   Init1750000000000,
@@ -16,4 +17,5 @@ export const migrations = [
   AddExercises1783000000000,
   AddTemplateToRecordingSessions1784000000000,
   AddAuthMfaPasskeys1785000000000,
+  AddPatientFkAppointmentsSessions1786000000000,
 ];
