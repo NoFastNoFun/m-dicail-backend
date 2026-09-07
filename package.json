@@ -4,6 +4,8 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "up": "docker compose up --build -d",
+    "down": "docker compose down",
     "build": "nest build api && nest build ai",
     "build:api": "nest build api",
     "build:ai": "nest build ai",
