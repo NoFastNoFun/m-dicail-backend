@@ -40,4 +40,9 @@ export class PatientExerciseRepository {
       order: { assignedAt: 'DESC' },
     });
   }
+
+  async existsByExerciseId(exerciseId: string): Promise<boolean> {
+    const count = await this.repo.count({ where: { exerciseId } });
+    return count > 0;
+  }
 }

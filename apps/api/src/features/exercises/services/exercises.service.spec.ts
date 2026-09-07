@@ -4,6 +4,7 @@ import { ExerciseRepository } from '../repositories/exercise.repository';
 import { PatientExerciseRepository } from '../repositories/patient-exercise.repository';
 import { PatientRepository } from '../../patients/repositories/patient.repository';
 import { ExerciseNotFoundException } from '../exceptions/exercise-not-found.exception';
+import { ExerciseInUseException } from '../exceptions/exercise-in-use.exception';
 import { PatientExerciseNotFoundException } from '../exceptions/patient-exercise-not-found.exception';
 import { PatientNotFoundException } from '../exceptions/patient-not-found.exception';
 import { PatientExerciseStatus } from '../entities/patient-exercise.entity';
@@ -74,6 +75,7 @@ describe('ExercisesService', () => {
       save: jest.fn(),
       deleteForUser: jest.fn(),
       findByStatus: jest.fn(),
+      existsByExerciseId: jest.fn(),
     };
 
     const mockPatientRepo = {
@@ -222,13 +224,15 @@ describe('ExercisesService', () => {
   });
 
   describe('deleteExercise', () => {
-    it('should delete an exercise', async () => {
+    it('should delete an exercise with no assignments', async () => {
       exerciseRepository.findById.mockResolvedValue(mockExercise);
+      patientExerciseRepository.existsByExerciseId.mockResolvedValue(false);
       exerciseRepository.delete.mockResolvedValue(true);
 
       await service.deleteExercise('exercise_123');
 
       expect(exerciseRepository.findById).toHaveBeenCalledWith('exercise_123');
+      expect(patientExerciseRepository.existsByExerciseId).toHaveBeenCalledWith('exercise_123');
       expect(exerciseRepository.delete).toHaveBeenCalledWith('exercise_123');
     });
 
@@ -236,6 +240,14 @@ describe('ExercisesService', () => {
       exerciseRepository.findById.mockResolvedValue(null);
 
       await expect(service.deleteExercise('invalid_id')).rejects.toThrow(ExerciseNotFoundException);
+    });
+
+    it('should throw ExerciseInUseException when the exercise still has patient assignments', async () => {
+      exerciseRepository.findById.mockResolvedValue(mockExercise);
+      patientExerciseRepository.existsByExerciseId.mockResolvedValue(true);
+
+      await expect(service.deleteExercise('exercise_123')).rejects.toThrow(ExerciseInUseException);
+      expect(exerciseRepository.delete).not.toHaveBeenCalled();
     });
   });
 

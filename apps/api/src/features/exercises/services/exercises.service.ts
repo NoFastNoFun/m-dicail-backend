@@ -9,6 +9,7 @@ import { PatientExerciseUpdateRequestDto } from '../dtos/requests/patient-exerci
 import { ExerciseResponseDto } from '../dtos/responses/exercise.response.dto';
 import { PatientExerciseResponseDto } from '../dtos/responses/patient-exercise.response.dto';
 import { ExerciseNotFoundException } from '../exceptions/exercise-not-found.exception';
+import { ExerciseInUseException } from '../exceptions/exercise-in-use.exception';
 import { PatientExerciseNotFoundException } from '../exceptions/patient-exercise-not-found.exception';
 import { PatientNotFoundException } from '../exceptions/patient-not-found.exception';
 import { PatientExerciseStatus } from '../entities/patient-exercise.entity';
@@ -65,6 +66,10 @@ export class ExercisesService {
   async deleteExercise(id: string): Promise<void> {
     const exercise = await this.exerciseRepository.findById(id);
     if (!exercise) throw new ExerciseNotFoundException(id);
+
+    const isInUse = await this.patientExerciseRepository.existsByExerciseId(id);
+    if (isInUse) throw new ExerciseInUseException(id);
+
     await this.exerciseRepository.delete(id);
   }
 
