@@ -46,11 +46,11 @@ export class PatientsService {
       mrn: dto.mrn,
       firstName: dto.first_name,
       lastName: dto.last_name,
-      birthDate: dto.birth_date ?? null,
-      sex: dto.sex ?? null,
-      contact: dto.contact ?? null,
-      notes: dto.notes ?? null,
-      patientMetadata: dto.patient_metadata ?? null,
+      birthDate: dto.birth_date !== undefined ? dto.birth_date : patient.birthDate,
+      sex: dto.sex !== undefined ? dto.sex : patient.sex,
+      contact: dto.contact !== undefined ? dto.contact : patient.contact,
+      notes: dto.notes !== undefined ? dto.notes : patient.notes,
+      patientMetadata: dto.patient_metadata !== undefined ? dto.patient_metadata : patient.patientMetadata,
     });
     return new PatientResponseDto(updated);
   }

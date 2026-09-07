@@ -63,9 +63,9 @@ export class AppointmentsService {
       ...appointment,
       patientId: dto.patient_id,
       startsAt: new Date(dto.starts_at),
-      endsAt: dto.ends_at ? new Date(dto.ends_at) : null,
+      endsAt: dto.ends_at !== undefined ? (dto.ends_at ? new Date(dto.ends_at) : null) : appointment.endsAt,
       status: dto.status ?? appointment.status,
-      notes: dto.notes ?? null,
+      notes: dto.notes !== undefined ? dto.notes : appointment.notes,
     });
     return new AppointmentResponseDto(updated);
   }
