@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsStrongPassword } from '@app/shared';
 
 export class AccountRecoveryRequestDto {
   @ApiProperty()
@@ -15,6 +16,6 @@ export class AccountRecoveryConfirmRequestDto {
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
+  @IsStrongPassword()
   declare password: string;
 }
