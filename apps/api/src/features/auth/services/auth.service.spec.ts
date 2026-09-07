@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -28,7 +28,7 @@ describe('AuthService', () => {
   let passkeysService: jest.Mocked<PasskeysService>;
   let mailService: { sendMail: jest.Mock; getPublicAppUrl: jest.Mock };
   let authTokenService: { createToken: jest.Mock; consumeToken: jest.Mock; peekToken: jest.Mock };
-  let mfaService: { verifyTotpOrRecovery: jest.Mock; disableMfaForRecovery: jest.Mock };
+  let mfaService: { verifyTotpOrRecovery: jest.Mock; verifyTotp: jest.Mock; disableMfaForRecovery: jest.Mock };
 
   const mockUser: User = {
     id: 'user-1',
@@ -53,6 +53,8 @@ describe('AuthService', () => {
       updateRefreshToken: jest.fn(),
       createPatientAccount: jest.fn(),
       updatePassword: jest.fn(),
+      updateFullName: jest.fn(),
+      updateEmail: jest.fn(),
       updateMfa: jest.fn(),
       updateDigestOptIn: jest.fn(),
       countByRole: jest.fn(),
@@ -74,6 +76,7 @@ describe('AuthService', () => {
 
     passkeysService = {
       hasPasskeys: jest.fn().mockResolvedValue(false),
+      verifyAuthentication: jest.fn(),
     } as unknown as jest.Mocked<PasskeysService>;
 
     mailService = {
@@ -89,6 +92,7 @@ describe('AuthService', () => {
 
     mfaService = {
       verifyTotpOrRecovery: jest.fn(),
+      verifyTotp: jest.fn(),
       disableMfaForRecovery: jest.fn(),
     };
 
@@ -418,6 +422,141 @@ describe('AuthService', () => {
           inviteCode: 'wrong',
         }),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('updates fullName and returns the user', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      usersService.updateFullName.mockResolvedValue({ ...mockUser, fullName: 'Dr New' });
+
+      const result = await service.updateProfile('user-1', { fullName: '  Dr New  ' });
+
+      expect(usersService.updateFullName).toHaveBeenCalledWith('user-1', 'Dr New');
+      expect(result.fullName).toBe('Dr New');
+    });
+
+    it('stores null when fullName is blank', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      usersService.updateFullName.mockResolvedValue({ ...mockUser, fullName: null });
+
+      const result = await service.updateProfile('user-1', { fullName: '   ' });
+
+      expect(usersService.updateFullName).toHaveBeenCalledWith('user-1', null);
+      expect(result.fullName).toBeNull();
+    });
+  });
+
+  describe('changePassword', () => {
+    it('rotates tokens after a valid current password', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      (argon2.hash as jest.Mock).mockResolvedValueOnce('new-password-hash').mockResolvedValueOnce('new-refresh-hash');
+      usersService.updatePassword.mockResolvedValue({ ...mockUser, hashedPassword: 'new-password-hash' });
+
+      const result = await service.changePassword('user-1', {
+        currentPassword: 'Oldpass1*',
+        newPassword: 'Newpass1*',
+      });
+
+      expect(usersService.updatePassword).toHaveBeenCalledWith('user-1', 'new-password-hash');
+      expect(result.status).toBe('authenticated');
+      expect(result.accessToken).toBe('access-token');
+    });
+
+    it('rejects a wrong current password', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.changePassword('user-1', { currentPassword: 'wrong', newPassword: 'Newpass1*' })).rejects.toThrow(UnauthorizedException);
+      expect(usersService.updatePassword).not.toHaveBeenCalled();
+    });
+
+    it('rejects when the new password equals the current one', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.changePassword('user-1', { currentPassword: 'Same1*', newPassword: 'Same1*' })).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('changeEmail', () => {
+    it('updates email with password and rotates tokens', async () => {
+      usersService.findById.mockResolvedValueOnce(mockUser).mockResolvedValueOnce({ ...mockUser, email: 'new@example.com' });
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      usersService.findByEmail.mockResolvedValue(null);
+      usersService.updateEmail.mockResolvedValue({ ...mockUser, email: 'new@example.com' });
+
+      const result = await service.changeEmail('user-1', {
+        newEmail: 'New@Example.com',
+        password: 'Testtest1*',
+      });
+
+      expect(usersService.updateEmail).toHaveBeenCalledWith('user-1', 'new@example.com');
+      expect(result.status).toBe('authenticated');
+      expect(result.user.email).toBe('new@example.com');
+    });
+
+    it('requires TOTP when MFA is enabled', async () => {
+      usersService.findById.mockResolvedValue({ ...mockUser, mfaEnabled: true });
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.changeEmail('user-1', { newEmail: 'new@example.com', password: 'Testtest1*' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects invalid TOTP when MFA is enabled', async () => {
+      usersService.findById.mockResolvedValue({ ...mockUser, mfaEnabled: true });
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      mfaService.verifyTotp.mockResolvedValue(false);
+
+      await expect(
+        service.changeEmail('user-1', {
+          newEmail: 'new@example.com',
+          password: 'Testtest1*',
+          totpCode: '000000',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('updates email with passkey and valid TOTP', async () => {
+      usersService.findById
+        .mockResolvedValueOnce({ ...mockUser, mfaEnabled: true })
+        .mockResolvedValueOnce({ ...mockUser, mfaEnabled: true, email: 'new@example.com' });
+      passkeysService.verifyAuthentication.mockResolvedValue('user-1');
+      mfaService.verifyTotp.mockResolvedValue(true);
+      usersService.findByEmail.mockResolvedValue(null);
+      usersService.updateEmail.mockResolvedValue({ ...mockUser, email: 'new@example.com' });
+
+      const result = await service.changeEmail('user-1', {
+        newEmail: 'new@example.com',
+        passkeyResponse: { id: 'cred-1' },
+        totpCode: '123456',
+      });
+
+      expect(passkeysService.verifyAuthentication).toHaveBeenCalled();
+      expect(mfaService.verifyTotp).toHaveBeenCalledWith('user-1', '123456');
+      expect(result.status).toBe('authenticated');
+    });
+
+    it('rejects duplicate email', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      usersService.findByEmail.mockResolvedValue({ ...mockUser, id: 'other-user' });
+
+      await expect(service.changeEmail('user-1', { newEmail: 'taken@example.com', password: 'Testtest1*' })).rejects.toThrow(ConflictException);
+    });
+
+    it('rejects when neither password nor passkey is provided', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+
+      await expect(service.changeEmail('user-1', { newEmail: 'new@example.com' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects wrong password', async () => {
+      usersService.findById.mockResolvedValue(mockUser);
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.changeEmail('user-1', { newEmail: 'new@example.com', password: 'wrong' })).rejects.toThrow(UnauthorizedException);
     });
   });
 });

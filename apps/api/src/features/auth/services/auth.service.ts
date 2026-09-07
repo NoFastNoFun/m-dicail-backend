@@ -13,6 +13,7 @@ import { RegisterRequestDto } from '../dtos/requests/register.request.dto';
 import { LoginRequestDto } from '../dtos/requests/login.request.dto';
 import { RefreshRequestDto } from '../dtos/requests/refresh.request.dto';
 import { CreatePatientAccountRequestDto } from '../dtos/requests/create-patient-account.request.dto';
+import { ChangeEmailRequestDto, ChangePasswordRequestDto, UpdateProfileRequestDto } from '../dtos/requests/profile.request.dto';
 import { AuthResponseDto, CreatePatientResponseDto, LoginResponseDto, MfaRequiredResponseDto, UserResponseDto } from '../dtos/responses/auth.response.dto';
 import { AuthTokenType } from '../enums/auth-token-type.enum';
 import { MfaMethod } from '../enums/mfa-method.enum';
@@ -20,6 +21,8 @@ import { timingSafeStringEqual } from '../utils/timing-safe-equal.util';
 import { AuthTokenService } from './auth-token.service';
 import { MfaService } from './mfa.service';
 import { PasskeysService } from './passkeys.service';
+import { normalizeEmail } from '@features/users/utils/normalize-email';
+import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 
 interface MfaJwtPayload {
   sub: string;
@@ -125,6 +128,78 @@ export class AuthService {
     const user = await this.usersService.findById(userId);
     if (!user) throw new UnauthorizedException('Utilisateur introuvable');
     return this.toUserResponse(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileRequestDto): Promise<UserResponseDto> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Utilisateur introuvable');
+
+    const trimmed = dto.fullName?.trim() ?? '';
+    const fullName = trimmed.length > 0 ? trimmed : null;
+    const updated = await this.usersService.updateFullName(userId, fullName);
+    return this.toUserResponse({ ...user, ...updated, fullName });
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordRequestDto): Promise<AuthResponseDto> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Utilisateur introuvable');
+
+    const valid = await argon2.verify(user.hashedPassword, dto.currentPassword).catch(() => false);
+    if (!valid) throw new UnauthorizedException('Mot de passe incorrect');
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('Le nouveau mot de passe doit etre different');
+    }
+
+    const hashedPassword = await argon2.hash(dto.newPassword);
+    await this.usersService.updatePassword(userId, hashedPassword);
+
+    const refreshed = await this.usersService.findById(userId);
+    if (!refreshed) throw new UnauthorizedException('Utilisateur introuvable');
+
+    return this.issueTokens({ ...refreshed, hashedPassword });
+  }
+
+  async changeEmail(userId: string, dto: ChangeEmailRequestDto): Promise<AuthResponseDto> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Utilisateur introuvable');
+
+    const hasPassword = typeof dto.password === 'string' && dto.password.length > 0;
+    const hasPasskey = dto.passkeyResponse != null;
+    if (hasPassword === hasPasskey) {
+      throw new BadRequestException('Mot de passe ou passkey requis (un seul)');
+    }
+
+    if (hasPassword) {
+      const valid = await argon2.verify(user.hashedPassword, dto.password!).catch(() => false);
+      if (!valid) throw new UnauthorizedException('Mot de passe incorrect');
+    } else {
+      await this.passkeysService.verifyAuthentication(dto.passkeyResponse as unknown as AuthenticationResponseJSON, undefined, userId);
+    }
+
+    if (user.mfaEnabled) {
+      if (!dto.totpCode?.trim()) {
+        throw new BadRequestException('Code TOTP requis');
+      }
+      const totpValid = await this.mfaService.verifyTotp(userId, dto.totpCode.trim());
+      if (!totpValid) throw new UnauthorizedException('Code TOTP invalide');
+    }
+
+    const newEmail = normalizeEmail(dto.newEmail);
+    if (newEmail === user.email) {
+      throw new BadRequestException('Le nouvel email doit etre different');
+    }
+
+    const existing = await this.usersService.findByEmail(newEmail);
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Email deja utilise');
+    }
+
+    await this.usersService.updateEmail(userId, newEmail);
+    const refreshed = await this.usersService.findById(userId);
+    if (!refreshed) throw new UnauthorizedException('Utilisateur introuvable');
+
+    return this.issueTokens({ ...refreshed, email: newEmail });
   }
 
   async forgotPassword(email: string): Promise<void> {

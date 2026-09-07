@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public, CurrentUser, Roles, RolesGuard, UserRole } from '@app/shared';
@@ -18,6 +18,7 @@ import {
   PasskeyAuthenticateVerifyRequestDto,
   PasskeyRegisterVerifyRequestDto,
 } from './dtos/requests/passkey.request.dto';
+import { ChangeEmailRequestDto, ChangePasswordRequestDto, UpdateProfileRequestDto } from './dtos/requests/profile.request.dto';
 import {
   AuthResponseDto,
   CreatePatientResponseDto,
@@ -161,6 +162,36 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deletePasskey(@CurrentUser('id') userId: string, @Param('id') id: string): Promise<void> {
     return this.passkeysService.deleteCredential(userId, id);
+  }
+
+  @ApiBearerAuth()
+  @Patch('profile')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  updateProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileRequestDto): Promise<UserResponseDto> {
+    return this.authService.updateProfile(userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @Post('profile/change-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  changePassword(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordRequestDto): Promise<AuthResponseDto> {
+    return this.authService.changePassword(userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @Post('profile/change-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  changeEmail(@CurrentUser('id') userId: string, @Body() dto: ChangeEmailRequestDto): Promise<AuthResponseDto> {
+    return this.authService.changeEmail(userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @Post('profile/reauth/passkey/options')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  profilePasskeyReauthOptions(@CurrentUser('id') userId: string) {
+    return this.passkeysService.getAuthenticationOptions(undefined, userId);
   }
 
   @ApiBearerAuth()

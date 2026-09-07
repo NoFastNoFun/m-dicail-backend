@@ -51,6 +51,14 @@ export class UsersService {
     return this.userRepository.save({ id: userId, hashedPassword });
   }
 
+  updateFullName(userId: string, fullName: string | null): Promise<User> {
+    return this.userRepository.save({ id: userId, fullName });
+  }
+
+  updateEmail(userId: string, email: string): Promise<User> {
+    return this.userRepository.save({ id: userId, email: normalizeEmail(email) });
+  }
+
   updateMfa(userId: string, data: Pick<Partial<User>, 'mfaEnabled' | 'totpSecret'>): Promise<User> {
     return this.userRepository.save({ id: userId, ...data });
   }
