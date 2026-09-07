@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions } from 'class-validator';
 
-export const STRONG_PASSWORD_SPECIAL_CHARACTERS = '!@#$%^&*(),.?":{}|<>_-';
+const STRONG_PASSWORD_SPECIAL_CHARACTERS = '!@#$%^&*(),.?:_-';
 
 const STRONG_PASSWORD_REGEX = new RegExp(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[${STRONG_PASSWORD_SPECIAL_CHARACTERS}]).{8,}$`);
 
