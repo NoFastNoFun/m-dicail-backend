@@ -63,6 +63,7 @@ export class SessionsService {
       ...(dto.patient_id !== undefined && { patientId: dto.patient_id }),
       ...(dto.template_id !== undefined && { templateId: dto.template_id ?? null }),
       ...(dto.template_name !== undefined && { templateName: dto.template_name ?? null }),
+      ...(dto.pathologies !== undefined && { pathologies: dto.pathologies ?? null }),
     });
     return new SessionResponseDto(updated);
   }

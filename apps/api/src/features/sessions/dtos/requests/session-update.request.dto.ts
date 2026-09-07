@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { SessionStatus } from '../../enums/session-status.enum';
 
 export class SoapNoteDto {
@@ -8,6 +8,18 @@ export class SoapNoteDto {
   @IsOptional() @IsString() declare objective?: string;
   @IsOptional() @IsString() declare assessment?: string;
   @IsOptional() @IsString() declare plan?: string;
+}
+
+export class SessionPathologyDto {
+  @IsString()
+  declare id: string;
+
+  @IsString()
+  declare name: string;
+
+  @IsOptional()
+  @IsString()
+  declare template_id?: string;
 }
 
 export class SessionUpdateRequestDto {
@@ -52,4 +64,11 @@ export class SessionUpdateRequestDto {
   @IsOptional()
   @IsString()
   declare template_name?: string;
+
+  @ApiProperty({ required: false, type: [SessionPathologyDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SessionPathologyDto)
+  declare pathologies?: SessionPathologyDto[];
 }

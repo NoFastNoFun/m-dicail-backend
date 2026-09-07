@@ -8,6 +8,12 @@ export interface SoapNote {
   plan?: string;
 }
 
+export interface SessionPathology {
+  id: string;
+  name: string;
+  template_id?: string | null;
+}
+
 @Entity('recording_sessions')
 export class RecordingSession {
   @PrimaryColumn({ name: 'id', type: 'varchar' })
@@ -44,6 +50,9 @@ export class RecordingSession {
 
   @Column({ name: 'template_name', type: 'varchar', nullable: true })
   declare templateName: string | null;
+
+  @Column({ name: 'pathologies', type: 'jsonb', nullable: true })
+  declare pathologies: SessionPathology[] | null;
 
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;

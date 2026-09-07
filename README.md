@@ -152,6 +152,7 @@ Managed with **TypeORM** — one file per domain, located in `apps/api/src/migra
 | `add-role-to-users.ts` | Adds `role` (enum: PRATICIEN/PATIENT) and `patient_id` columns to `users` |
 | `add-exercises.ts` | Creates `exercises` and `patient_exercises` tables |
 | `add-template-to-recording-sessions.ts` | Adds `template_id` and `template_name` to `recording_sessions` |
+| `add-pathologies-to-recording-sessions.ts` | Adds jsonb `pathologies` list to `recording_sessions` |
 
 Generate a new migration:
 ```bash
