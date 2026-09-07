@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
-import { UserRole } from '@app/shared';
 import { UsersService } from '@features/users/services/users.service';
 import { PatientsService } from '@features/patients/services/patients.service';
 import { User } from '@features/users/entities/user.entity';
@@ -188,10 +187,11 @@ export class AuthService {
       return;
     }
 
-    const praticienCount = await this.usersService.countByRole(UserRole.PRATICIEN);
-    if (praticienCount > 0) {
-      throw new ForbiddenException('Inscription fermee');
-    }
+    // TODO: fix email sending before re-enabling the single-praticien limit below
+    // const praticienCount = await this.usersService.countByRole(UserRole.PRATICIEN);
+    // if (praticienCount > 0) {
+    //   throw new ForbiddenException('Inscription fermee');
+    // }
   }
 
   private async buildMfaChallenge(userId: string): Promise<MfaRequiredResponseDto> {

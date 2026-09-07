@@ -140,10 +140,14 @@ describe('AuthService', () => {
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
     });
 
-    it('throws ForbiddenException when a praticien already exists and no invite code is configured', async () => {
+    // Single-praticien limit temporarily disabled (see TODO in auth.service.ts)
+    it('allows registration even when a praticien already exists and no invite code is configured', async () => {
       usersService.countByRole.mockResolvedValue(1);
+      usersService.findByEmail.mockResolvedValue(null);
+      (argon2.hash as jest.Mock).mockResolvedValueOnce('new-password-hash').mockResolvedValueOnce('new-refresh-hash');
+      usersService.create.mockResolvedValue(mockUser);
 
-      await expect(service.register({ email: 'new@example.com', password: 'password123', fullName: 'New' })).rejects.toThrow(ForbiddenException);
+      await expect(service.register({ email: 'new@example.com', password: 'password123', fullName: 'New' })).resolves.toBeDefined();
     });
 
     it('throws ConflictException when email already exists', async () => {
