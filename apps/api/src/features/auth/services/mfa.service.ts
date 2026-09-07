@@ -69,6 +69,14 @@ export class MfaService {
     return this.verifyCodeForUser(user, code);
   }
 
+  async verifyTotp(userId: string, code: string): Promise<boolean> {
+    const user = await this.usersService.findById(userId);
+    if (!user?.mfaEnabled || !user.totpSecret) return false;
+
+    const secret = decryptSecret(user.totpSecret, this.configService.getOrThrow<string>('SECRET_KEY'));
+    return authenticator.verify({ token: code, secret });
+  }
+
   async disableMfaForRecovery(userId: string): Promise<void> {
     await this.recoveryCodeRepository.deleteAllForUser(userId);
     await this.usersService.updateMfa(userId, { mfaEnabled: false, totpSecret: null });

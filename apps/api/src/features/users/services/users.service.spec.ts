@@ -156,4 +156,16 @@ describe('UsersService', () => {
     expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', mfaEnabled: true, totpSecret: 'enc' });
     expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', medicalWatchDigestOptIn: true });
   });
+
+  it('updateFullName and updateEmail persist partial rows', async () => {
+    repository.save.mockResolvedValue(mockUser);
+
+    await service.updateFullName('user-1', 'New Name');
+    await service.updateFullName('user-1', null);
+    await service.updateEmail('user-1', 'New@Example.com');
+
+    expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', fullName: 'New Name' });
+    expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', fullName: null });
+    expect(repository.save).toHaveBeenCalledWith({ id: 'user-1', email: 'new@example.com' });
+  });
 });
