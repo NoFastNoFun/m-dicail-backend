@@ -1,4 +1,5 @@
 export * from './decorators/current-user.decorator';
+export * from './decorators/is-strong-password.decorator';
 export * from './decorators/public.decorator';
 export * from './filters/http-exception.filter';
 export * from './guards/jwt-auth.guard';

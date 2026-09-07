@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsStrongPassword } from '@app/shared';
 
 export class ForgotPasswordRequestDto {
   @ApiProperty()
@@ -15,9 +16,6 @@ export class ResetPasswordRequestDto {
 
   @ApiProperty()
   @IsString()
-  @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).+$/, {
-    message: 'Le mot de passe doit contenir majuscule, minuscule, chiffre et caractere special',
-  })
+  @IsStrongPassword()
   declare password: string;
 }
