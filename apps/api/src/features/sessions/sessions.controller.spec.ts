@@ -15,6 +15,7 @@ describe('SessionsController', () => {
     ended_at: null,
     status: 'recording',
     transcript: null,
+    transcript_is_ai: false,
     soap_note: null,
     summary: null,
     template_id: null,

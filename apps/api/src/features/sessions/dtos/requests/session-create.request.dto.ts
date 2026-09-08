@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import { SessionStatus } from '../../enums/session-status.enum';
 
 export class SessionCreateRequestDto {
@@ -17,6 +17,11 @@ export class SessionCreateRequestDto {
   @IsOptional()
   @IsString()
   declare transcript?: string;
+
+  @ApiProperty({ required: false, example: false })
+  @IsOptional()
+  @IsBoolean()
+  declare transcript_is_ai?: boolean;
 
   @ApiProperty({ required: false, example: 'patient_a1b2c3d4e5f6' })
   @IsOptional()

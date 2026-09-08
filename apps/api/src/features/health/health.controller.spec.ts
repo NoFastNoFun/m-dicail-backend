@@ -7,7 +7,7 @@ describe('HealthController', () => {
 
     expect(result.status).toBe('ok');
     expect(result.service).toBe('api');
-    expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
+    expect(result.version).toMatch(/\d+\.\d+\.\d+/);
     expect(result.uptimeSeconds).toBeGreaterThanOrEqual(0);
     expect(result.timestamp).toEqual(expect.any(String));
     expect(result).not.toHaveProperty('node');

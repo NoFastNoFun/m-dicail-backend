@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsDateString, IsEnum, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { SessionStatus } from '../../enums/session-status.enum';
 
 export class SoapNoteDto {
@@ -37,6 +37,11 @@ export class SessionUpdateRequestDto {
   @IsOptional()
   @IsString()
   declare transcript?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  declare transcript_is_ai?: boolean;
 
   @ApiProperty({ required: false })
   @IsOptional()

@@ -1,6 +1,6 @@
 {
   "name": "m-dicail-backend",
-  "version": "0.1.1",
+  "version": "beta-ai-stt-0.1.3",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
