@@ -8,7 +8,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AiModule);
   applySecurityMiddleware(app);
 
-  app.setGlobalPrefix('ai');
+  app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   app.useGlobalFilters(new HttpExceptionFilter());
