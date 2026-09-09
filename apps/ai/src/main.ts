@@ -24,7 +24,7 @@ async function bootstrap(): Promise<void> {
   if (shouldEnableSwagger()) {
     const config = new DocumentBuilder()
       .setTitle('m-dicail AI API')
-      .setDescription('Service IA — recherche intelligente PubMed + suggestions')
+      .setDescription('Service IA — transcription audio (Groq) + suggestions')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

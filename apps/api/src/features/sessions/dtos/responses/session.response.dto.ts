@@ -9,6 +9,7 @@ export class SessionResponseDto {
   @ApiProperty({ nullable: true }) declare ended_at: Date | null;
   @ApiProperty() declare status: string;
   @ApiProperty({ nullable: true }) declare transcript: string | null;
+  @ApiProperty() declare transcript_is_ai: boolean;
   @ApiProperty({ nullable: true }) declare soap_note: SoapNote | null;
   @ApiProperty({ nullable: true }) declare summary: string | null;
   @ApiProperty({ nullable: true }) declare template_id: string | null;
@@ -26,6 +27,7 @@ export class SessionResponseDto {
     this.ended_at = session.endedAt;
     this.status = session.status;
     this.transcript = session.transcript;
+    this.transcript_is_ai = session.transcriptIsAi;
     this.soap_note = session.soapNote;
     this.summary = session.summary;
     this.template_id = session.templateId;
