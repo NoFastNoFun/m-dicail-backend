@@ -32,6 +32,7 @@ describe('SessionsService', () => {
     endedAt: null,
     status: SessionStatus.RECORDING,
     transcript: 'Hello',
+    transcriptIsAi: false,
     soapNote: null,
     summary: null,
     templateId: null,

@@ -39,6 +39,9 @@ export class RecordingSession {
   @Column({ name: 'transcript', type: 'text', nullable: true })
   declare transcript: string | null;
 
+  @Column({ name: 'transcript_is_ai', type: 'boolean', default: false })
+  declare transcriptIsAi: boolean;
+
   @Column({ name: 'soap_note', type: 'jsonb', nullable: true })
   declare soapNote: SoapNote | null;
 

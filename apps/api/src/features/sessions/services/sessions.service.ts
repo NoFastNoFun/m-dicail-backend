@@ -31,6 +31,7 @@ export class SessionsService {
       startedAt: dto.started_at ? new Date(dto.started_at) : null,
       status: dto.status ?? SessionStatus.RECORDING,
       transcript: this.scrubText(dto.transcript ?? null, identifiers),
+      transcriptIsAi: dto.transcript_is_ai ?? false,
     });
     return new SessionResponseDto(session);
   }
@@ -60,6 +61,7 @@ export class SessionsService {
       ...(dto.ended_at !== undefined && { endedAt: dto.ended_at ? new Date(dto.ended_at) : null }),
       ...(dto.status !== undefined && { status: dto.status }),
       ...(textTouched && { transcript, soapNote, summary }),
+      ...(dto.transcript_is_ai !== undefined && { transcriptIsAi: dto.transcript_is_ai }),
       ...(dto.patient_id !== undefined && { patientId: dto.patient_id }),
       ...(dto.template_id !== undefined && { templateId: dto.template_id ?? null }),
       ...(dto.template_name !== undefined && { templateName: dto.template_name ?? null }),
