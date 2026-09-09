@@ -165,5 +165,25 @@ describe('SoapClassifierService', () => {
       expect(result.assessment).toContain('cervicalgie');
       expect(result.plan).toContain('séances de kinésithérapie');
     });
+
+    it('classe un terme pathologique connu isolé dans subjective via le dictionnaire de racines', () => {
+      const result = service.classify('tendinopathie du sus-épineux droit');
+      expect(result.subjective).toContain('tendinopathie');
+    });
+
+    it('classe un terme pathologique composé (préfixe + suffixe) inconnu dans assessment via le dictionnaire de racines', () => {
+      const result = service.classify('suspicion de chondropathie fémoro-patellaire');
+      expect(result.assessment).toContain('chondropathie');
+    });
+
+    it('classe un terme pathologique composé avec préfixe de direction dans assessment', () => {
+      const result = service.classify('le patient présente une périostite tibiale marquée');
+      expect(result.assessment).toContain('périostite');
+    });
+
+    it('classe un terme pathologique connu (déjà composé) dans subjective même si dérivable du dictionnaire', () => {
+      const result = service.classify('périarthrite de hanche importante');
+      expect(result.subjective).toContain('périarthrite');
+    });
   });
 });
