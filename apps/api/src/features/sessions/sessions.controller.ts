@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Roles, RolesGuard, UserRole } from '@app/shared';
 import { SessionsService } from './services/sessions.service';
@@ -39,5 +39,11 @@ export class SessionsController {
   @Get('patients/:patientId/recording-sessions')
   listByPatient(@CurrentUser('id') userId: string, @Param('patientId') patientId: string): Promise<SessionResponseDto[]> {
     return this.sessionsService.listByPatient(userId, patientId);
+  }
+
+  @Delete('recording-sessions/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(@CurrentUser('id') userId: string, @Param('id') id: string): Promise<void> {
+    return this.sessionsService.delete(userId, id);
   }
 }

@@ -98,6 +98,14 @@ export class SessionsService {
     return sessions.map((s) => new SessionResponseDto(s));
   }
 
+  async delete(userId: string, id: string): Promise<void> {
+    const deleted = await this.sessionRepository.deleteForUser(userId, id);
+
+    if (!deleted) {
+      throw new SessionNotFoundException(id);
+    }
+  }
+
   private async resolveIdentifiers(userId: string, patientId: string | null | undefined): Promise<KnownPatientIdentifiers | null> {
     if (!patientId) return null;
     const patient = await this.patientsService.getOne(userId, patientId);

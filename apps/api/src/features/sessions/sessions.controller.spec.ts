@@ -32,6 +32,7 @@ describe('SessionsController', () => {
       associatePatient: jest.fn(),
       getOne: jest.fn(),
       listByPatient: jest.fn(),
+      delete: jest.fn(),
     } as unknown as jest.Mocked<SessionsService>;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -74,5 +75,12 @@ describe('SessionsController', () => {
     sessionsService.listByPatient.mockResolvedValue([session]);
 
     await expect(controller.listByPatient('user-1', 'patient_1')).resolves.toEqual([session]);
+  });
+
+  it('delete delegates to sessionsService', async () => {
+    sessionsService.delete.mockResolvedValue(undefined);
+
+    await expect(controller.delete('user-1', 'recording_1')).resolves.toBeUndefined();
+    expect(sessionsService.delete).toHaveBeenCalledWith('user-1', 'recording_1');
   });
 });
