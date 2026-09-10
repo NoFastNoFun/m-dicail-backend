@@ -47,6 +47,7 @@ describe('SessionsService', () => {
       save: jest.fn(),
       findByIdForUser: jest.fn(),
       findByPatientForUser: jest.fn(),
+      deleteForUser: jest.fn(),
     } as unknown as jest.Mocked<RecordingSessionRepository>;
 
     patientsService = {
@@ -279,6 +280,22 @@ describe('SessionsService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].patient_id).toBe('patient_abc');
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes a session owned by the user', async () => {
+      repository.deleteForUser.mockResolvedValue(true);
+
+      await service.delete(userId, mockSession.id);
+
+      expect(repository.deleteForUser).toHaveBeenCalledWith(userId, mockSession.id);
+    });
+
+    it('throws SessionNotFoundException when session does not exist', async () => {
+      repository.deleteForUser.mockResolvedValue(false);
+
+      await expect(service.delete(userId, 'missing')).rejects.toThrow(SessionNotFoundException);
     });
   });
 });
