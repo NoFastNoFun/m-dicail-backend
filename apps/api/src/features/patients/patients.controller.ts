@@ -15,8 +15,9 @@ export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 
   @Get()
-  list(@CurrentUser('id') userId: string, @Query('query') query?: string): Promise<PatientResponseDto[]> {
-    return this.patientsService.list(userId, query);
+  list(@CurrentUser('id') userId: string, @Query('query') query?: string, @Query('archived') archived?: string): Promise<PatientResponseDto[]> {
+    const archivedOnly = archived === 'true' || archived === '1';
+    return this.patientsService.list(userId, query, archivedOnly);
   }
 
   @Post()
@@ -33,6 +34,16 @@ export class PatientsController {
   @Put(':id')
   update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: PatientUpdateRequestDto): Promise<PatientResponseDto> {
     return this.patientsService.update(userId, id, dto);
+  }
+
+  @Post(':id/archive')
+  archive(@CurrentUser('id') userId: string, @Param('id') id: string): Promise<PatientResponseDto> {
+    return this.patientsService.archive(userId, id);
+  }
+
+  @Post(':id/unarchive')
+  unarchive(@CurrentUser('id') userId: string, @Param('id') id: string): Promise<PatientResponseDto> {
+    return this.patientsService.unarchive(userId, id);
   }
 
   @Delete(':id')
