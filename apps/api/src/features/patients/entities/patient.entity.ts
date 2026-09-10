@@ -34,6 +34,9 @@ export class Patient {
   @Column({ name: 'patient_metadata', type: 'jsonb', nullable: true })
   declare patientMetadata: Record<string, unknown> | null;
 
+  @Column({ name: 'archived_at', type: 'timestamptz', nullable: true })
+  declare archivedAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
 

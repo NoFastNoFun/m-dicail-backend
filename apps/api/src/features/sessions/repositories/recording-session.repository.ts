@@ -24,4 +24,13 @@ export class RecordingSessionRepository {
   save(session: Partial<RecordingSession>): Promise<RecordingSession> {
     return this.repo.save(session);
   }
+
+  async deleteForUser(userId: string, id: string): Promise<boolean> {
+    const result = await this.repo.delete({ id, userId });
+    return result.affected === 1;
+  }
+
+  async deleteByPatientForUser(userId: string, patientId: string): Promise<void> {
+    await this.repo.delete({ userId, patientId });
+  }
 }
