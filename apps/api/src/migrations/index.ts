@@ -9,6 +9,7 @@ import { AddAuthMfaPasskeys1785000000000 } from './add-auth-mfa-passkeys';
 import { AddPatientFkAppointmentsSessions1786000000000 } from './add-patient-fk-appointments-sessions';
 import { AddPathologiesToRecordingSessions1787000000000 } from './add-pathologies-to-recording-sessions';
 import { AddTranscriptIsAiToRecordingSessions1788000000000 } from './add-transcript-is-ai-to-recording-sessions';
+import { AddTelemetryLogs1789000000000 } from './add-telemetry-logs';
 
 export const migrations = [
   Init1750000000000,
@@ -22,4 +23,5 @@ export const migrations = [
   AddPatientFkAppointmentsSessions1786000000000,
   AddPathologiesToRecordingSessions1787000000000,
   AddTranscriptIsAiToRecordingSessions1788000000000,
+  AddTelemetryLogs1789000000000,
 ];

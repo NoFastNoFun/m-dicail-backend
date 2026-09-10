@@ -1,6 +1,6 @@
 {
   "name": "m-dicail-backend",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
@@ -98,7 +98,8 @@
       "apps/api/src/features/**/*.controller.ts",
       "apps/api/src/features/**/exceptions/**/*.ts",
       "libs/shared/src/filters/**/*.ts",
-      "libs/shared/src/guards/**/*.ts"
+      "libs/shared/src/guards/**/*.ts",
+      "!apps/api/src/features/telemetry/**/*.ts"
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
