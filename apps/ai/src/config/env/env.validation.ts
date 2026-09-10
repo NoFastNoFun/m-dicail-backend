@@ -24,6 +24,10 @@ class EnvironmentVariables {
   declare GROQ_TRANSCRIPTION_MODEL?: string;
 
   @IsOptional()
+  @IsString()
+  declare GROQ_SOAP_MODEL?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(1000)
   declare GROQ_TIMEOUT_MS?: number;
