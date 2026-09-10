@@ -16,6 +16,7 @@ import { MedicalWatchModule } from './features/medical-watch/medical-watch.modul
 import { HealthModule } from './features/health/health.module';
 import { DeeplinkModule } from './features/deeplink/deeplink.module';
 import { ExercisesModule } from './features/exercises/exercises.module';
+import { TelemetryModule } from './features/telemetry/telemetry.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ExercisesModule } from './features/exercises/exercises.module';
     NotesModule,
     MedicalWatchModule,
     ExercisesModule,
+    TelemetryModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
