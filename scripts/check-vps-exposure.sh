@@ -104,7 +104,9 @@ fi
 printf '\nprivate ports on %s (must be closed)\n' "$TARGET"
 for port in $PRIVATE_PORTS; do
     # A refused/filtered connection is the desired outcome here.
-    if nc -z -w 5 "$TARGET" "$port" 2>/dev/null; then
+    if ! command -v nc >/dev/null 2>&1; then
+        bad "nc not found — cannot verify port $port"
+    elif nc -z -w 5 "$TARGET" "$port" 2>/dev/null; then
         bad "port $port is reachable from the internet"
     else
         pass "port $port closed"
