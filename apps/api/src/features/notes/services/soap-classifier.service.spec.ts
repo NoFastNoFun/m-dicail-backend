@@ -32,7 +32,7 @@ describe('SoapClassifierService', () => {
       expect(result.subjective).toContain("je n'arrive plus à lever le bras");
     });
 
-    it("classifies a range-of-motion measure as objective via regex", () => {
+    it('classifies a range-of-motion measure as objective via regex', () => {
       const result = service.classify('flexion lombaire : 60 degrés');
       expect(result.objective).toContain('flexion lombaire : 60 degrés');
       expect(result.subjective).toBe('');
