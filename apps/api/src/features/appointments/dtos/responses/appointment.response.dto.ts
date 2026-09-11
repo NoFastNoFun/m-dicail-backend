@@ -5,7 +5,7 @@ import { AppointmentStatus } from '../../enums/appointment-status.enum';
 export class AppointmentResponseDto {
   @ApiProperty() declare id: string;
   @ApiProperty() declare user_id: string;
-  @ApiProperty() declare patient_id: string;
+  @ApiProperty({ nullable: true }) declare patient_id: string | null;
   @ApiProperty() declare starts_at: Date;
   @ApiProperty({ nullable: true }) declare ends_at: Date | null;
   @ApiProperty({ enum: AppointmentStatus }) declare status: AppointmentStatus;
