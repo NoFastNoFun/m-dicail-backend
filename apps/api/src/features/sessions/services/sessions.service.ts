@@ -134,6 +134,7 @@ export class SessionsService {
 
   private scrubText(text: string | null | undefined, identifiers: KnownPatientIdentifiers | null): string | null {
     if (text == null) return null;
+    // Persist only scrubbed text so transcripts/SOAP never store raw chart identifiers.
     return this.anonymization.anonymize(text, identifiers).anonymizedText;
   }
 

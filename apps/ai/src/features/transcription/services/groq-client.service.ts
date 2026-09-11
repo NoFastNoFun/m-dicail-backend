@@ -6,6 +6,7 @@ const DEFAULT_GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 const DEFAULT_MODEL = 'whisper-large-v3-turbo';
 const DEFAULT_TIMEOUT_MS = 120_000;
 
+/** Whisper bias prompt: French physiotherapy lexicon (model input, leave French). */
 const FR_MEDICAL_PROMPT =
   'Consultation de kinesitherapie. Orthographe: lombalgie, cervicalgie, sciatalgie, rotulien, ischio-jambiers, gonalgie, tendinopathie, rachis.';
 

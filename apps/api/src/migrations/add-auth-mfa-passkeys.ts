@@ -1,5 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
+/** MFA (TOTP + recovery codes), one-shot auth tokens, and WebAuthn credential/challenge tables. */
 export class AddAuthMfaPasskeys1785000000000 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

@@ -32,6 +32,7 @@ export class MedicalWatchService implements OnModuleInit {
   }
 
   /** Midnight Europe/Paris: refresh PubMed articles for every specialty. */
+  // Europe/Paris: practitioners expect overnight refresh before morning clinic hours.
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'Europe/Paris' })
   async runDailyWatch(): Promise<void> {
     this.logger.log('Starting daily medical watch...');
