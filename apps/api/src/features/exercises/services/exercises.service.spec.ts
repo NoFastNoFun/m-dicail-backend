@@ -41,6 +41,7 @@ describe('ExercisesService', () => {
     contact: null,
     notes: null,
     patientMetadata: null,
+    archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

@@ -29,4 +29,8 @@ export class RecordingSessionRepository {
     const result = await this.repo.delete({ id, userId });
     return result.affected === 1;
   }
+
+  async deleteByPatientForUser(userId: string, patientId: string): Promise<void> {
+    await this.repo.delete({ userId, patientId });
+  }
 }
