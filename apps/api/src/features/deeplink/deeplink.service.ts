@@ -17,6 +17,7 @@ export class DeeplinkService {
   }
 
   buildBounceHtml(path: DeeplinkPath, token?: string): string {
+    // Email clients often refuse custom schemes; this HTML meta-refresh + JS hand-off opens the app.
     const deeplink = this.buildAppUrl(path, token);
     const href = escapeHtml(deeplink);
     const jsUrl = JSON.stringify(deeplink);

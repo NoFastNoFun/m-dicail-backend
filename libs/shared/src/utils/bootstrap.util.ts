@@ -7,10 +7,12 @@ export function resolveCorsOrigins(): string[] | false {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
+  // false = reflect no origin (deny). An empty allow-list must not become CORS *.
   return origins.length > 0 ? origins : false;
 }
 
 export function shouldEnableSwagger(): boolean {
+  // Production stays closed unless explicitly opted in — the OpenAPI UI is otherwise a map of the API.
   if (process.env.ENABLE_SWAGGER === 'true') return true;
   if (process.env.ENABLE_SWAGGER === 'false') return false;
   return process.env.NODE_ENV !== 'production';

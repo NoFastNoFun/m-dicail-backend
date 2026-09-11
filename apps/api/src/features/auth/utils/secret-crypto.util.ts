@@ -3,10 +3,12 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypt
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 
+/** AES-256 key = SHA-256(SECRET_KEY) so any-length app secret becomes 32 bytes. */
 function deriveKey(secretKey: string): Buffer {
   return createHash('sha256').update(secretKey).digest();
 }
 
+/** AES-256-GCM blob is base64(iv || authTag || ciphertext) — used for TOTP secrets at rest. */
 export function encryptSecret(plaintext: string, secretKey: string): string {
   const key = deriveKey(secretKey);
   const iv = randomBytes(IV_LENGTH);
