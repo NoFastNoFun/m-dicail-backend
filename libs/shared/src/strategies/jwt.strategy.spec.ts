@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserRole } from '@app/shared';
 import { JwtStrategy } from './jwt.strategy';
+import { UserRole } from '../enums/user-role.enum';
 
 describe('JwtStrategy', () => {
   const strategy = new JwtStrategy({ getOrThrow: () => 'secret-key-at-least-32-chars-long' } as unknown as ConfigService);
