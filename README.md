@@ -175,7 +175,25 @@ The stack is exposed through nginx:
 | `/api` | Main API (port 8000) | `https://localhost/api/v1/auth/login` |
 | `/ai` | AI service (port 8001) | `https://localhost/ai/v1/...` |
 
-HTTP on port 80 redirects to HTTPS on port 443.
+HTTP on port 80 redirects to HTTPS on port 443 — port 80 serves nothing else.
+
+## Public exposure
+
+Only nginx is reachable from outside. `api` (8000), `ai` (8001) and `postgres`
+(5432) talk to it over the Docker network and must never be published on the
+host; `docker-compose.yml` binds Postgres to `127.0.0.1` for local work only.
+
+Check a deployed host from a machine other than the VPS:
+
+```bash
+sh scripts/check-vps-exposure.sh medicail.nf2.tech <origin-ip>
+```
+
+`medicail.nf2.tech` is proxied through Cloudflare, so testing the hostname
+alone only measures Cloudflare's edge — the edge terminates TLS, applies its
+own HTTPS redirect and forwards only 80/443. Pass the origin IP to test the
+machine itself: anyone who learns that IP can bypass the edge, so the origin
+firewall has to hold on its own.
 
 Swagger:
 - API: `https://localhost/docs` (or `http://localhost:8000/docs` when running `api` directly without nginx)
