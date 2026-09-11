@@ -11,8 +11,8 @@ export class Appointment {
   declare userId: string;
 
   @Index()
-  @Column({ name: 'patient_id', type: 'varchar' })
-  declare patientId: string;
+  @Column({ name: 'patient_id', type: 'varchar', nullable: true })
+  declare patientId: string | null;
 
   @Column({ name: 'starts_at', type: 'timestamptz' })
   declare startsAt: Date;

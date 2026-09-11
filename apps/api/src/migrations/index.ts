@@ -10,6 +10,7 @@ import { AddPatientFkAppointmentsSessions1786000000000 } from './add-patient-fk-
 import { AddPathologiesToRecordingSessions1787000000000 } from './add-pathologies-to-recording-sessions';
 import { AddTranscriptIsAiToRecordingSessions1788000000000 } from './add-transcript-is-ai-to-recording-sessions';
 import { AddTelemetryLogs1789000000000 } from './add-telemetry-logs';
+import { SetNullAppointmentsPatientFk1790000000000 } from './set-null-appointments-patient-fk';
 
 export const migrations = [
   Init1750000000000,
@@ -24,4 +25,5 @@ export const migrations = [
   AddPathologiesToRecordingSessions1787000000000,
   AddTranscriptIsAiToRecordingSessions1788000000000,
   AddTelemetryLogs1789000000000,
+  SetNullAppointmentsPatientFk1790000000000,
 ];
