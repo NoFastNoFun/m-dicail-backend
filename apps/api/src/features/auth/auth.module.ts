@@ -8,7 +8,7 @@ import { PatientsModule } from '@features/patients/patients.module';
 import { MailModule } from '../mail/mail.module';
 import { AuthService } from './services/auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtStrategy } from '@app/shared';
 import { AuthToken } from './entities/auth-token.entity';
 import { MfaRecoveryCode } from './entities/mfa-recovery-code.entity';
 import { WebAuthnCredential } from './entities/webauthn-credential.entity';
