@@ -26,3 +26,5 @@ Thumbs.db
 docs/
 
 nginx/certs/*.pem
+
+docker-compose.override.yml
