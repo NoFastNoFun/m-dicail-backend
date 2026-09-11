@@ -10,13 +10,13 @@ describe('NotesService', () => {
   });
 
   describe('process', () => {
-    it('renvoie session_id et processed_text identique au raw_text', () => {
+    it('returns session_id and processed_text equal to raw_text', () => {
       const result = service.process({ session_id: 'abc', raw_text: 'bonjour', language: 'fr' });
       expect(result.session_id).toBe('abc');
       expect(result.processed_text).toBe('bonjour');
     });
 
-    it('renvoie un soap_note avec les 5 sections', () => {
+    it('returns a soap_note with all 5 sections', () => {
       const result = service.process({ session_id: 'abc', raw_text: 'bonjour', language: 'fr' });
       expect(result.soap_note).toBeDefined();
       expect(result.soap_note).toHaveProperty('subjective');
@@ -26,7 +26,7 @@ describe('NotesService', () => {
       expect(result.soap_note).toHaveProperty('other');
     });
 
-    it('classe correctement un texte kiné dans soap_note', () => {
+    it('classifies physiotherapy text into soap_note sections', () => {
       const result = service.process({
         session_id: 'abc',
         raw_text: "j'ai mal au genou depuis 2 semaines. je vous prescris 8 séances de kinésithérapie.",
@@ -36,7 +36,7 @@ describe('NotesService', () => {
       expect(result.soap_note.plan).toContain('séances de kinésithérapie');
     });
 
-    it('anonymise le texte avant classification SOAP', () => {
+    it('anonymizes text before SOAP classification', () => {
       const result = service.process({
         session_id: 'abc',
         raw_text:
@@ -54,7 +54,7 @@ describe('NotesService', () => {
   });
 
   describe('summarize', () => {
-    it('renvoie les 20 premiers caractères', () => {
+    it('returns the first 20 characters', () => {
       const result = service.summarize({
         session_id: 'abc',
         processed_text: 'un texte assez long pour tester le slice',
@@ -64,12 +64,12 @@ describe('NotesService', () => {
       expect(result.summary.length).toBe(20);
     });
 
-    it('renvoie le texte complet si moins de 20 caractères', () => {
+    it('returns the full text when shorter than 20 characters', () => {
       const result = service.summarize({ session_id: 'abc', processed_text: 'court', language: 'fr' });
       expect(result.summary).toBe('court');
     });
 
-    it('anonymise le processed_text avant de tronquer', () => {
+    it('anonymizes processed_text before truncating', () => {
       const result = service.summarize({
         session_id: 'abc',
         processed_text: 'écrire à jean.dupont@gmail.com pour suite',

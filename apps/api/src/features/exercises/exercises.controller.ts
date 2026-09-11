@@ -16,7 +16,6 @@ import { PatientExerciseResponseDto } from './dtos/responses/patient-exercise.re
 export class ExercisesController {
   constructor(private readonly exercisesService: ExercisesService) {}
 
-  // Exercise catalog endpoints
   @Get('catalog')
   listExercises(@Query('category') category?: string, @Query('query') query?: string): Promise<ExerciseResponseDto[]> {
     return this.exercisesService.listExercises(category, query);
@@ -44,7 +43,6 @@ export class ExercisesController {
     return this.exercisesService.deleteExercise(id);
   }
 
-  // Patient exercise assignment endpoints
   @Get('assignments')
   listPatientExercises(@CurrentUser('id') userId: string, @Query('patientId') patientId?: string): Promise<PatientExerciseResponseDto[]> {
     return this.exercisesService.listPatientExercises(userId, patientId);

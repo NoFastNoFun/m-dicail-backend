@@ -5,6 +5,7 @@ import { SOAP_REGEX_RULES } from '../constants/soap-regex.constants';
 
 @Injectable()
 export class SoapClassifierService {
+  /** Split on sentence boundaries, then bucket each sentence into a SOAP section. */
   classify(rawText: string): SoapNote {
     if (!rawText.trim()) {
       return { subjective: '', objective: '', assessment: '', plan: '', other: '' };
@@ -39,6 +40,7 @@ export class SoapClassifierService {
   private classifySentence(sentence: string): SoapSection {
     const lower = sentence.toLowerCase();
 
+    // Regex rules win over keyword counts (higher precision for measures, Rx, etc.).
     for (const { pattern, section } of SOAP_REGEX_RULES) {
       if (pattern.test(lower)) return section;
     }
@@ -59,6 +61,7 @@ export class SoapClassifierService {
 
     const best = (Object.entries(scores) as [SoapSection, number][]).filter(([s]) => s !== 'other').reduce((max, cur) => (cur[1] > max[1] ? cur : max));
 
+    // Tie / zero hits → other (do not invent a section).
     return best[1] > 0 ? best[0] : 'other';
   }
 }

@@ -22,7 +22,6 @@ export class ExercisesService {
     private readonly patientRepository: PatientRepository,
   ) {}
 
-  // Exercise CRUD
   async listExercises(category?: string, query?: string): Promise<ExerciseResponseDto[]> {
     const exercises = await this.exerciseRepository.findAll(category, query);
     return exercises.map((e) => new ExerciseResponseDto(e));
@@ -73,7 +72,6 @@ export class ExercisesService {
     await this.exerciseRepository.delete(id);
   }
 
-  // Patient Exercise Assignment CRUD
   async listPatientExercises(userId: string, patientId?: string): Promise<PatientExerciseResponseDto[]> {
     const assignments = patientId
       ? await this.patientExerciseRepository.findAllForPatient(userId, patientId)
@@ -88,11 +86,9 @@ export class ExercisesService {
   }
 
   async assignExercise(userId: string, dto: PatientExerciseCreateRequestDto): Promise<PatientExerciseResponseDto> {
-    // Verify patient belongs to the practitioner
     const patient = await this.patientRepository.findByIdForUser(userId, dto.patientId);
     if (!patient) throw new PatientNotFoundException(dto.patientId);
 
-    // Verify exercise exists
     const exercise = await this.exerciseRepository.findById(dto.exerciseId);
     if (!exercise) throw new ExerciseNotFoundException(dto.exerciseId);
 

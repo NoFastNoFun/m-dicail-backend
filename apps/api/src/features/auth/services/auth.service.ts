@@ -262,11 +262,8 @@ export class AuthService {
       return;
     }
 
-    // TODO: fix email sending before re-enabling the single-praticien limit below
-    // const praticienCount = await this.usersService.countByRole(UserRole.PRATICIEN);
-    // if (praticienCount > 0) {
-    //   throw new ForbiddenException('Inscription fermee');
-    // }
+    // TODO: once email sending is reliable, re-enable the single-practitioner gate:
+    // if countByRole(PRATICIEN) > 0, reject further open registration.
   }
 
   private async buildMfaChallenge(userId: string): Promise<MfaRequiredResponseDto> {

@@ -17,6 +17,7 @@ export class NotesService {
 
   process(dto: NoteProcessRequestDto): NoteProcessResponseDto {
     const start = Date.now();
+    // Anonymize before classify so keyword/regex rules never see raw PII.
     const { anonymizedText } = this.anonymization.anonymize(dto.raw_text);
     const soapNote = this.soapClassifier.classify(anonymizedText);
 

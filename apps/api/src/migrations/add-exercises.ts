@@ -2,7 +2,6 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddExercises1783000000000 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
-    // Create exercises table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "exercises" (
         "id"           VARCHAR PRIMARY KEY,
@@ -17,7 +16,6 @@ export class AddExercises1783000000000 implements MigrationInterface {
       )
     `);
 
-    // Create patient_exercises table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "patient_exercises" (
         "id"          VARCHAR PRIMARY KEY,
@@ -37,7 +35,6 @@ export class AddExercises1783000000000 implements MigrationInterface {
       )
     `);
 
-    // Create indexes
     await queryRunner.query(`
       CREATE INDEX "idx_patient_exercises_patient_id" ON "patient_exercises" ("patient_id")
     `);
