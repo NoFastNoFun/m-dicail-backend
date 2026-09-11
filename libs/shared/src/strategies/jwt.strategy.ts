@@ -23,6 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload): AuthenticatedUser {
+    // MFA challenge JWTs have purpose=mfa and no email/role — reject them as access tokens.
     if (payload.purpose === 'mfa' || !payload.sub || !payload.email || !payload.role) {
       throw new UnauthorizedException();
     }

@@ -19,12 +19,14 @@ export class MailService {
     const pass = this.readNonEmpty('SMTP_PASS');
     this.fromAddress = this.readNonEmpty('SMTP_FROM') ?? user ?? 'noreply@medicail.test';
     this.enabled = Boolean(host && port && user && pass && this.fromAddress);
+    // Production must send; tests and MAIL_SKIP=true (non-prod only) may drop messages on the floor.
     this.allowSkip = process.env.NODE_ENV !== 'production' && (process.env.NODE_ENV === 'test' || process.env.MAIL_SKIP === 'true');
 
     if (this.enabled && host && port && user && pass) {
       this.transporter = nodemailer.createTransport({
         host,
         port,
+        // 465 = implicit TLS (SMTPS); 587 = STARTTLS. family:4 avoids IPv6 hangs on the VPS.
         secure: port === 465,
         requireTLS: port === 587,
         family: 4,
