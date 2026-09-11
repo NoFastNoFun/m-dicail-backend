@@ -100,7 +100,10 @@ export class SessionsService {
 
   async delete(userId: string, id: string): Promise<void> {
     const deleted = await this.sessionRepository.deleteForUser(userId, id);
-    if (!deleted) throw new SessionNotFoundException(id);
+
+    if (!deleted) {
+      throw new SessionNotFoundException(id);
+    }
   }
 
   private async resolveIdentifiers(userId: string, patientId: string | null | undefined): Promise<KnownPatientIdentifiers | null> {

@@ -46,4 +46,10 @@ export class SessionsController {
   listByPatient(@CurrentUser('id') userId: string, @Param('patientId') patientId: string): Promise<SessionResponseDto[]> {
     return this.sessionsService.listByPatient(userId, patientId);
   }
+
+  @Delete('recording-sessions/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(@CurrentUser('id') userId: string, @Param('id') id: string): Promise<void> {
+    return this.sessionsService.delete(userId, id);
+  }
 }
