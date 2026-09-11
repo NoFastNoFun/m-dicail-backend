@@ -144,7 +144,7 @@ describe('AuthService', () => {
       expect(result.refreshToken.startsWith('user-1.')).toBe(true);
     });
 
-    // Single-praticien limit temporarily disabled (see TODO in auth.service.ts)
+    // Single-practitioner limit temporarily disabled (see TODO in auth.service.ts)
     it('allows registration even when a praticien already exists and no invite code is configured', async () => {
       usersService.countByRole.mockResolvedValue(1);
       usersService.findByEmail.mockResolvedValue(null);

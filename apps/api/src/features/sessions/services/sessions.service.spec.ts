@@ -100,7 +100,7 @@ describe('SessionsService', () => {
       );
     });
 
-    it('anonymise le transcript avant sauvegarde', async () => {
+    it('anonymizes the transcript before saving', async () => {
       repository.save.mockImplementation(async (data) => data as RecordingSession);
 
       await service.create(userId, {
@@ -155,7 +155,7 @@ describe('SessionsService', () => {
       expect(result.transcript).toBe('Updated transcript');
     });
 
-    it('anonymise transcript et soap_note avant sauvegarde', async () => {
+    it('anonymizes transcript and soap_note before saving', async () => {
       repository.findByIdForUser.mockResolvedValue(mockSession);
       repository.save.mockImplementation(async (data) => data as RecordingSession);
 
@@ -230,7 +230,7 @@ describe('SessionsService', () => {
       expect(result.patient_id).toBe('patient_new');
     });
 
-    it('re-scrub le transcript existant lors de l association patient', async () => {
+    it('re-scrubs the existing transcript when associating a patient', async () => {
       const dirty: RecordingSession = {
         ...mockSession,
         patientId: null,

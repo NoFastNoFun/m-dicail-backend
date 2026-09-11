@@ -10,6 +10,7 @@ export class GroqSoapService {
 
   constructor(private readonly config: ConfigService) {}
 
+  /** Calls Groq chat completions with forced JSON; maps abort to GatewayTimeout. */
   async generate(params: { transcript: string; language: string }): Promise<SoapNote> {
     const apiKey = this.config.getOrThrow<string>('GROQ_API_KEY');
     const baseUrl = (this.config.get<string>('GROQ_BASE_URL') || DEFAULT_GROQ_BASE_URL).replace(/\/$/, '');
