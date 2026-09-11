@@ -1,21 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, IsNull, Not, Repository } from 'typeorm';
 import { Patient } from '../entities/patient.entity';
 
 @Injectable()
 export class PatientRepository {
   constructor(@InjectRepository(Patient) private readonly repo: Repository<Patient>) {}
 
-  findAllForUser(userId: string, query?: string): Promise<Patient[]> {
+  findAllForUser(userId: string, query?: string, archived = false): Promise<Patient[]> {
+    const archiveFilter: FindOptionsWhere<Patient> = archived ? { archivedAt: Not(IsNull()) } : { archivedAt: IsNull() };
+
     return this.repo.find({
       where: query
         ? [
-            { userId, firstName: ILike(`%${query}%`) },
-            { userId, lastName: ILike(`%${query}%`) },
-            { userId, mrn: ILike(`%${query}%`) },
+            { userId, firstName: ILike(`%${query}%`), ...archiveFilter },
+            { userId, lastName: ILike(`%${query}%`), ...archiveFilter },
+            { userId, mrn: ILike(`%${query}%`), ...archiveFilter },
           ]
-        : { userId },
+        : { userId, ...archiveFilter },
       order: { createdAt: 'DESC' },
     });
   }

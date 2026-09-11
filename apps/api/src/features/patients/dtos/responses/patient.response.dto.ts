@@ -12,6 +12,7 @@ export class PatientResponseDto {
   @ApiProperty({ nullable: true }) declare contact: Record<string, unknown> | null;
   @ApiProperty({ nullable: true }) declare notes: string | null;
   @ApiProperty({ nullable: true }) declare patient_metadata: Record<string, unknown> | null;
+  @ApiProperty({ nullable: true }) declare archived_at: Date | null;
   @ApiProperty() declare created_at: Date;
   @ApiProperty() declare updated_at: Date;
 
@@ -26,6 +27,7 @@ export class PatientResponseDto {
     this.contact = patient.contact as Record<string, unknown> | null;
     this.notes = patient.notes;
     this.patient_metadata = patient.patientMetadata as Record<string, unknown> | null;
+    this.archived_at = patient.archivedAt;
     this.created_at = patient.createdAt;
     this.updated_at = patient.updatedAt;
   }

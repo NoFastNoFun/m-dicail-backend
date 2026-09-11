@@ -17,6 +17,7 @@ describe('PatientsController', () => {
     contact: null,
     notes: null,
     patient_metadata: null,
+    archived_at: null,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -27,6 +28,8 @@ describe('PatientsController', () => {
       create: jest.fn(),
       getOne: jest.fn(),
       update: jest.fn(),
+      archive: jest.fn(),
+      unarchive: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<PatientsService>;
 
@@ -38,11 +41,18 @@ describe('PatientsController', () => {
     controller = module.get(PatientsController);
   });
 
-  it('list delegates to patientsService', async () => {
+  it('list delegates to patientsService with archived=false by default', async () => {
     patientsService.list.mockResolvedValue([patient]);
 
     await expect(controller.list('user-1', 'jane')).resolves.toEqual([patient]);
-    expect(patientsService.list).toHaveBeenCalledWith('user-1', 'jane');
+    expect(patientsService.list).toHaveBeenCalledWith('user-1', 'jane', false);
+  });
+
+  it('list passes archived=true when query param is true', async () => {
+    patientsService.list.mockResolvedValue([patient]);
+
+    await expect(controller.list('user-1', undefined, 'true')).resolves.toEqual([patient]);
+    expect(patientsService.list).toHaveBeenCalledWith('user-1', undefined, true);
   });
 
   it('create delegates to patientsService', async () => {
@@ -64,6 +74,20 @@ describe('PatientsController', () => {
     patientsService.update.mockResolvedValue(patient);
 
     await expect(controller.update('user-1', 'patient_1', dto)).resolves.toBe(patient);
+  });
+
+  it('archive delegates to patientsService', async () => {
+    patientsService.archive.mockResolvedValue(patient);
+
+    await expect(controller.archive('user-1', 'patient_1')).resolves.toBe(patient);
+    expect(patientsService.archive).toHaveBeenCalledWith('user-1', 'patient_1');
+  });
+
+  it('unarchive delegates to patientsService', async () => {
+    patientsService.unarchive.mockResolvedValue(patient);
+
+    await expect(controller.unarchive('user-1', 'patient_1')).resolves.toBe(patient);
+    expect(patientsService.unarchive).toHaveBeenCalledWith('user-1', 'patient_1');
   });
 
   it('delete delegates to patientsService', async () => {
