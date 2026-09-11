@@ -4,6 +4,7 @@ import { SOAP_KEYWORDS } from '../constants/soap-keywords.constants';
 import { SOAP_REGEX_RULES } from '../constants/soap-regex.constants';
 import { matchMedicalRootDictionary } from '../utils/medical-root-matcher';
 
+/** Heuristic SOAP splitter for French clinical dictation (regex first, then keyword scores). */
 @Injectable()
 export class SoapClassifierService {
   /** Split on sentence boundaries, then bucket each sentence into a SOAP section. */

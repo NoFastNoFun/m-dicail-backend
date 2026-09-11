@@ -31,6 +31,7 @@ export class NotesService {
   }
 
   summarize(dto: NoteSummarizeRequestDto): NoteSummarizeResponseDto {
+    // Placeholder until a real summarizer lands — still anonymize so the stub cannot leak PII.
     const { anonymizedText } = this.anonymization.anonymize(dto.processed_text);
     return { summary: anonymizedText.slice(0, 20) };
   }

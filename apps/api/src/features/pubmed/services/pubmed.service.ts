@@ -258,6 +258,7 @@ export class PubmedService {
     if (treeNumbers.length === 0) {
       return true;
     }
+    // MeSH tree C* = diseases; drop anatomy/procedure descriptors for pathology search UX.
     return treeNumbers.some((treeNumber) => /^C/i.test(treeNumber.trim()));
   }
 
@@ -273,6 +274,7 @@ export class PubmedService {
   private async ncbiFetch(url: string): Promise<Response> {
     let lastError: unknown;
 
+    // One retry on 429/5xx or network blips — NCBI rate-limits aggressive clients.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const res = await this.ncbiFetchOnce(url);

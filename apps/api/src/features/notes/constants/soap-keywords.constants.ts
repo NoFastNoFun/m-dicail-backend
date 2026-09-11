@@ -1,5 +1,6 @@
 import { SoapSection } from '../interfaces/soap-note.interface';
 
+/** French clinical lexicon for keyword scoring (fixtures/product strings stay French). */
 export const SOAP_KEYWORDS: Record<SoapSection, string[]> = {
   subjective: [
     "j'ai mal",
