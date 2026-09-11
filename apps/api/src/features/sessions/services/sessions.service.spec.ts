@@ -284,10 +284,11 @@ describe('SessionsService', () => {
   });
 
   describe('delete', () => {
-    it('deletes a session', async () => {
+    it('deletes a session owned by the user', async () => {
       repository.deleteForUser.mockResolvedValue(true);
 
-      await expect(service.delete(userId, mockSession.id)).resolves.toBeUndefined();
+      await service.delete(userId, mockSession.id);
+
       expect(repository.deleteForUser).toHaveBeenCalledWith(userId, mockSession.id);
     });
 

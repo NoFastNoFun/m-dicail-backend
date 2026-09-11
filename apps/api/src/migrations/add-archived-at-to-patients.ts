@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddArchivedAtToPatients1789000000000 implements MigrationInterface {
-  name = 'AddArchivedAtToPatients1789000000000';
+export class AddArchivedAtToPatients1791000000000 implements MigrationInterface {
+  name = 'AddArchivedAtToPatients1791000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
