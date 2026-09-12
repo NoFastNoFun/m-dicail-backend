@@ -17,6 +17,7 @@ export class NotesService {
 
   process(dto: NoteProcessRequestDto): NoteProcessResponseDto {
     const start = Date.now();
+    // Anonymize before classify so keyword/regex rules never see raw PII.
     const { anonymizedText } = this.anonymization.anonymize(dto.raw_text);
     const soapNote = this.soapClassifier.classify(anonymizedText);
 
@@ -30,6 +31,7 @@ export class NotesService {
   }
 
   summarize(dto: NoteSummarizeRequestDto): NoteSummarizeResponseDto {
+    // Placeholder until a real summarizer lands — still anonymize so the stub cannot leak PII.
     const { anonymizedText } = this.anonymization.anonymize(dto.processed_text);
     return { summary: anonymizedText.slice(0, 20) };
   }

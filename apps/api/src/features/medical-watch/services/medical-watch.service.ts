@@ -27,9 +27,12 @@ export class MedicalWatchService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
+    // Fire-and-forget seed so boot is not blocked on PubMed.
     void this.seedIfEmpty();
   }
 
+  /** Midnight Europe/Paris: refresh PubMed articles for every specialty. */
+  // Europe/Paris: practitioners expect overnight refresh before morning clinic hours.
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'Europe/Paris' })
   async runDailyWatch(): Promise<void> {
     this.logger.log('Starting daily medical watch...');
@@ -39,6 +42,7 @@ export class MedicalWatchService implements OnModuleInit {
     this.logger.log('Daily medical watch completed.');
   }
 
+  /** 07:00 Europe/Paris digest email — not implemented yet (opt-in users only). */
   @Cron('0 7 * * *', { timeZone: 'Europe/Paris' })
   async sendDailyDigest(): Promise<void> {
     const optedInUsers = await this.usersService.findDigestOptInUsers();

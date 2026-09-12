@@ -14,6 +14,7 @@ export class JwtAuthGuard extends JwtGuardBase implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()]);
+    // Global APP_GUARD — @Public() is how login/health/deeplink skip the JWT check.
     if (isPublic) return true;
     return super.canActivate(context);
   }

@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import { Public } from '@app/shared';
 import { DeeplinkService } from './deeplink.service';
 
+/** Unversioned /reset-password and /recovery bounce pages (email clients cannot open custom URL schemes). */
 @Controller({ version: VERSION_NEUTRAL })
 export class DeeplinkController {
   constructor(private readonly deeplinkService: DeeplinkService) {}

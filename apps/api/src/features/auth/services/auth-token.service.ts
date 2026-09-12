@@ -5,6 +5,7 @@ import { AuthTokenRepository } from '../repositories/auth-token.repository';
 import { AuthTokenType } from '../enums/auth-token-type.enum';
 import { AuthToken } from '../entities/auth-token.entity';
 
+/** Password-reset / account-recovery tokens: 1h TTL, wire format `{id}.{secret}`, secret hashed at rest. */
 const TOKEN_TTL_MS = 60 * 60 * 1000;
 
 @Injectable()
@@ -12,6 +13,7 @@ export class AuthTokenService {
   constructor(private readonly authTokenRepository: AuthTokenRepository) {}
 
   async createToken(userId: string, type: AuthTokenType): Promise<{ token: string; record: AuthToken }> {
+    // Only one outstanding token per type — requesting a new reset invalidates the previous link.
     await this.authTokenRepository.invalidateAllForUser(userId, type);
 
     const token = randomBytes(32).toString('hex');
@@ -45,11 +47,13 @@ export class AuthTokenService {
     if (!valid) throw new BadRequestException('Jeton invalide');
 
     const consumed = await this.authTokenRepository.markUsedIfUnused(record.id);
+    // Conditional UPDATE: two concurrent consumes of the same link cannot both succeed.
     if (!consumed) throw new BadRequestException('Jeton deja utilise');
     return record.userId;
   }
 
   async peekToken(token: string, type: AuthTokenType): Promise<string> {
+    // Validate without consuming so callers can check a password first (account recovery).
     const separatorIndex = token.indexOf('.');
     if (separatorIndex === -1) throw new BadRequestException('Jeton invalide');
 

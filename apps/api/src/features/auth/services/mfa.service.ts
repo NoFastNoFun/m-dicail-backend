@@ -27,6 +27,7 @@ export class MfaService {
 
     const secret = authenticator.generateSecret();
     const encrypted = encryptSecret(secret, this.configService.getOrThrow<string>('SECRET_KEY'));
+    // Store the secret encrypted but leave MFA off until the user proves they can generate a code.
     await this.usersService.updateMfa(userId, { totpSecret: encrypted, mfaEnabled: false });
 
     const otpauthUrl = authenticator.keyuri(user.email, 'Medicail', secret);
@@ -44,6 +45,7 @@ export class MfaService {
     }
 
     await this.usersService.updateMfa(userId, { mfaEnabled: true });
+    // Plaintext codes are returned once; only argon2 hashes are stored.
     const recoveryCodes = await this.generateRecoveryCodes(userId);
 
     const email = buildMfaEnabledEmail({});
@@ -78,6 +80,7 @@ export class MfaService {
   }
 
   async disableMfaForRecovery(userId: string): Promise<void> {
+    // Password-proven account recovery: drop TOTP + leftover codes so the user can re-enroll.
     await this.recoveryCodeRepository.deleteAllForUser(userId);
     await this.usersService.updateMfa(userId, { mfaEnabled: false, totpSecret: null });
   }
@@ -93,6 +96,7 @@ export class MfaService {
       if (stored.usedAt) continue;
       const match = await argon2.verify(stored.hashedCode, code.trim());
       if (match) {
+        // Conditional UPDATE so two concurrent logins cannot burn the same recovery code twice.
         const consumed = await this.recoveryCodeRepository.markUsedIfUnused(stored.id);
         if (consumed) return true;
       }

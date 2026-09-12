@@ -1,6 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 
+/** Extra keys that are optional in dev but required once NODE_ENV=production (mail + WebAuthn). */
 const PRODUCTION_REQUIRED_KEYS = [
   'APP_PUBLIC_URL',
   'SMTP_HOST',

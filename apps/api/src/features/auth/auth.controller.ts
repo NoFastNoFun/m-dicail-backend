@@ -40,6 +40,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  // Tighter than the global 60/min — brute-force / enumeration surface.
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   register(@Body() dto: RegisterRequestDto): Promise<AuthResponseDto> {
     return this.authService.register(dto);

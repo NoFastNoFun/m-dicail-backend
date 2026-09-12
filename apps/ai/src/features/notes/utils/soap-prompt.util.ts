@@ -1,3 +1,4 @@
+/** French system prompt for Groq SOAP generation — intentional model instructions, not developer docs. */
 export function buildSoapSystemPrompt(language: string): string {
   return [
     'Tu es un assistant clinique specialise en kinesitherapie, expert dans la redaction de notes medicales au format SOAP.',

@@ -8,6 +8,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   applySecurityMiddleware(app);
 
+  // health + email bounce URLs live at the origin root so nginx can proxy them without /api/v1.
   app.setGlobalPrefix('api', { exclude: ['health', 'reset-password', 'recovery'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 

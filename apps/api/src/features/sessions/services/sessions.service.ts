@@ -44,6 +44,7 @@ export class SessionsService {
     const patientChanged = dto.patient_id !== undefined && dto.patient_id !== session.patientId;
     const identifiers = await this.resolveIdentifiers(userId, nextPatientId);
 
+    // Re-scrub whenever patient identity or free-text fields change so stored PII stays tokenized.
     const textTouched = patientChanged || dto.transcript !== undefined || dto.soap_note !== undefined || dto.summary !== undefined;
 
     let transcript = dto.transcript !== undefined ? dto.transcript : session.transcript;
@@ -76,6 +77,7 @@ export class SessionsService {
 
     const identifiers = await this.resolveIdentifiers(userId, dto.patient_id);
 
+    // Linking a patient enables known-identifier scrubbing on already-stored text.
     const updated = await this.sessionRepository.save({
       ...session,
       patientId: dto.patient_id,
@@ -132,6 +134,7 @@ export class SessionsService {
 
   private scrubText(text: string | null | undefined, identifiers: KnownPatientIdentifiers | null): string | null {
     if (text == null) return null;
+    // Persist only scrubbed text so transcripts/SOAP never store raw chart identifiers.
     return this.anonymization.anonymize(text, identifiers).anonymizedText;
   }
 

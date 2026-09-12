@@ -29,6 +29,7 @@ interface MfaJwtPayload {
   purpose: 'mfa';
 }
 
+/** Dummy argon2id hash so unknown emails still pay the verify cost (no account-existence leak). */
 const DUMMY_PASSWORD_HASH = '$argon2id$v=19$m=65536,t=3,p=4$8aGOKFdYyhteMkxdv4E7zQ$tbpd2QVmEbOAL62yYfcZbtjJUQvvUzqCoOX/J2A2pcI';
 
 @Injectable()
@@ -70,6 +71,7 @@ export class AuthService {
 
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmail(dto.email);
+    // Always argon2.verify — dummy hash when the email is unknown — so timing does not leak existence.
     const hash = user?.hashedPassword ?? DUMMY_PASSWORD_HASH;
     const valid = await argon2.verify(hash, dto.password).catch(() => false);
     if (!user || !valid) throw new UnauthorizedException('Email ou mot de passe incorrect');
@@ -99,6 +101,7 @@ export class AuthService {
   }
 
   async refresh(dto: RefreshRequestDto): Promise<AuthResponseDto> {
+    // Wire format is `{userId}.{secret}`; only the secret is hashed at rest.
     const separatorIndex = dto.refreshToken.indexOf('.');
     if (separatorIndex === -1) throw new UnauthorizedException('Refresh token invalide ou expire');
 
@@ -166,6 +169,7 @@ export class AuthService {
 
     const hasPassword = typeof dto.password === 'string' && dto.password.length > 0;
     const hasPasskey = dto.passkeyResponse != null;
+    // XOR: exactly one of password or passkey, then TOTP as well if MFA is on.
     if (hasPassword === hasPasskey) {
       throw new BadRequestException('Mot de passe ou passkey requis (un seul)');
     }
@@ -204,6 +208,7 @@ export class AuthService {
 
   async forgotPassword(email: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
+    // Same no-content response whether the email exists — avoids account enumeration.
     if (!user) return;
 
     const { token } = await this.authTokenService.createToken(user.id, AuthTokenType.PASSWORD_RESET);
@@ -221,6 +226,7 @@ export class AuthService {
 
   async requestAccountRecovery(email: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
+    // Same no-content response whether the email exists — avoids account enumeration.
     if (!user) return;
 
     const { token } = await this.authTokenService.createToken(user.id, AuthTokenType.ACCOUNT_RECOVERY);
@@ -230,6 +236,7 @@ export class AuthService {
   }
 
   async confirmAccountRecovery(token: string, password: string): Promise<void> {
+    // Peek first so a wrong password does not burn the recovery link; consume only after it matches.
     const userId = await this.authTokenService.peekToken(token, AuthTokenType.ACCOUNT_RECOVERY);
     const user = await this.usersService.findById(userId);
     if (!user) throw new UnauthorizedException('Utilisateur introuvable');
@@ -244,6 +251,7 @@ export class AuthService {
   verifyMfaToken(mfaToken: string): string {
     try {
       const payload = this.jwtService.verify<MfaJwtPayload>(mfaToken);
+      // purpose=mfa tokens must never be accepted as access tokens (see JwtStrategy).
       if (payload.purpose !== 'mfa' || !payload.sub) {
         throw new BadRequestException('Jeton MFA invalide');
       }
@@ -256,17 +264,15 @@ export class AuthService {
   private async assertRegistrationAllowed(inviteCode?: string): Promise<void> {
     const expectedCode = this.configService.get<string>('REGISTRATION_INVITE_CODE');
     if (expectedCode) {
+      // Constant-time compare: a short invite code would otherwise leak via timing.
       if (!inviteCode || !timingSafeStringEqual(inviteCode, expectedCode)) {
         throw new ForbiddenException("Code d'inscription invalide");
       }
       return;
     }
 
-    // TODO: fix email sending before re-enabling the single-praticien limit below
-    // const praticienCount = await this.usersService.countByRole(UserRole.PRATICIEN);
-    // if (praticienCount > 0) {
-    //   throw new ForbiddenException('Inscription fermee');
-    // }
+    // TODO: once email sending is reliable, re-enable the single-practitioner gate:
+    // if countByRole(PRATICIEN) > 0, reject further open registration.
   }
 
   private async buildMfaChallenge(userId: string): Promise<MfaRequiredResponseDto> {
@@ -275,6 +281,7 @@ export class AuthService {
       methods.push(MfaMethod.PASSKEY);
     }
 
+    // Short-lived, purpose-scoped JWT — not an access token (no email/role claims).
     const mfaToken = this.jwtService.sign({ sub: userId, purpose: 'mfa' }, { expiresIn: '5m' });
     return { status: 'mfa_required', mfaToken, methods };
   }
@@ -287,6 +294,7 @@ export class AuthService {
       purpose: 'access',
     });
 
+    // Rotate the refresh secret on every issue so a stolen token cannot be reused after refresh/logout.
     const secret = randomBytes(64).toString('hex');
     const hashedRefreshToken = await argon2.hash(secret);
 

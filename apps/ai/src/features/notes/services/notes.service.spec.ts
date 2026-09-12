@@ -10,7 +10,7 @@ describe('NotesService', () => {
     service = new NotesService(groqSoap);
   });
 
-  it('renvoie session_id et processed_text identique au raw_text', async () => {
+  it('returns session_id and processed_text equal to raw_text', async () => {
     groqSoap.generate.mockResolvedValue({ subjective: '', objective: '', assessment: '', plan: '', other: '' });
 
     const result = await service.process({ session_id: 'abc', raw_text: 'bonjour', language: 'fr' });
@@ -19,7 +19,7 @@ describe('NotesService', () => {
     expect(result.processed_text).toBe('bonjour');
   });
 
-  it('delegue la generation du soap_note au GroqSoapService avec le transcript et la langue', async () => {
+  it('delegates soap_note generation to GroqSoapService with transcript and language', async () => {
     const soapNote = { subjective: 's', objective: 'o', assessment: 'a', plan: 'p', other: '' };
     groqSoap.generate.mockResolvedValue(soapNote);
 
@@ -29,7 +29,7 @@ describe('NotesService', () => {
     expect(result.soap_note).toBe(soapNote);
   });
 
-  it("utilise 'fr' par defaut quand la langue n'est pas fournie", async () => {
+  it("defaults language to 'fr' when omitted", async () => {
     groqSoap.generate.mockResolvedValue({ subjective: '', objective: '', assessment: '', plan: '', other: '' });
 
     await service.process({ session_id: 'abc', raw_text: 'texte', language: undefined as unknown as string });

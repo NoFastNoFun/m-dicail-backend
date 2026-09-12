@@ -12,6 +12,7 @@ import { UsersService } from '@features/users/services/users.service';
 import { WebAuthnCredentialRepository } from '../repositories/webauthn-credential.repository';
 import { WebAuthnChallengeRepository } from '../repositories/webauthn-challenge.repository';
 
+/** Challenges are one-shot and expire quickly so a captured options payload cannot be replayed. */
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
 @Injectable()
@@ -34,7 +35,9 @@ export class PasskeysService {
       userName: user.email,
       userDisplayName: user.fullName ?? user.email,
       userID: Buffer.from(user.id),
+      // No attestation chain: we only need a resident credential, not a hardware certificate.
       attestationType: 'none',
+      // Prevent the authenticator from silently creating a second credential for the same device.
       excludeCredentials: existing.map((c) => ({
         id: c.credentialId,
         transports: ['internal', 'hybrid'] as AuthenticatorTransportFuture[],
@@ -54,6 +57,7 @@ export class PasskeysService {
       throw new BadRequestException('Challenge expire ou introuvable');
     }
 
+    // Delete before verify so two concurrent POSTs cannot consume the same challenge.
     const consumed = await this.challengeRepository.deleteById(challengeRecord.id);
     if (!consumed) throw new BadRequestException('Challenge expire ou introuvable');
 
@@ -79,6 +83,7 @@ export class PasskeysService {
   }
 
   async getAuthenticationOptions(email?: string, mfaUserId?: string): Promise<PublicKeyCredentialRequestOptionsJSON> {
+    // Two entry points: identifier-first login (email) or second factor after password (mfaUserId).
     let userId = mfaUserId ?? null;
 
     if (!userId && email) {
@@ -120,6 +125,7 @@ export class PasskeysService {
       throw new UnauthorizedException('Authentification passkey echouee');
     }
 
+    // Same one-shot consume as registration — delete before verify.
     const challengeRecord = await this.challengeRepository.findLatestByUser(userId, 'authentication');
     if (!challengeRecord || challengeRecord.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException('Challenge expire ou introuvable');
@@ -142,6 +148,7 @@ export class PasskeysService {
 
     if (!verification.verified) throw new UnauthorizedException('Authentification passkey echouee');
 
+    // Persist the new sign counter — a regression is how cloned authenticators are detected.
     await this.credentialRepository.save({
       ...storedCredential,
       counter: verification.authenticationInfo.newCounter,
@@ -195,6 +202,7 @@ export class PasskeysService {
   }
 
   private getOrigin(): string {
+    // Must match the browser origin that created the credential (scheme + host + port).
     return this.configService.get<string>('WEBAUTHN_ORIGIN') ?? 'http://localhost:3000';
   }
 

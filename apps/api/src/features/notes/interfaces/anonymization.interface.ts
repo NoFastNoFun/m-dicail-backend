@@ -14,7 +14,7 @@ export type AnonymizationEntityType =
 export interface AnonymizationRule {
   type: AnonymizationEntityType;
   pattern: RegExp;
-  /** Replacement when the match has a preserved prefix group (e.g. civilité). */
+  /** Keep the honorific/prefix (Monsieur, Dr, le patient) and only replace the name. */
   keepGroup0?: boolean;
 }
 

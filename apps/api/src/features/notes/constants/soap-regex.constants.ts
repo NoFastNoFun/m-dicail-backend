@@ -1,7 +1,7 @@
 import { SoapSection } from '../interfaces/soap-note.interface';
 
-// Phrase-level regex rules only. Medical-root dictionary matching is handled
-// separately (Set / token scan) after these rules and before keyword scoring.
+/** High-precision French clinical phrase patterns; first match wins (order matters). */
+// Medical-root dictionary matching runs after these rules (Set / token scan), before keyword scoring.
 export const SOAP_REGEX_RULES: { pattern: RegExp; section: SoapSection }[] = [
   { pattern: /je\s+(vous\s+)?(prescris|prescrit|préconise|recommande)/i, section: 'plan' },
   { pattern: /\d+\s*séances/i, section: 'plan' },

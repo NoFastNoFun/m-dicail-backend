@@ -1,5 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
+/** Soft-archive patients via archived_at (null = active); composite index for list filters. */
 export class AddArchivedAtToPatients1791000000000 implements MigrationInterface {
   name = 'AddArchivedAtToPatients1791000000000';
 

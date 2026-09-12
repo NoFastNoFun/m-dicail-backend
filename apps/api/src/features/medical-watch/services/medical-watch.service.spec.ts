@@ -75,7 +75,6 @@ describe('MedicalWatchService', () => {
 
     service = module.get(MedicalWatchService);
 
-    // Suppress logger output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'error').mockImplementation();
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
@@ -138,7 +137,6 @@ describe('MedicalWatchService', () => {
 
       await service.runDailyWatch();
 
-      // Should be called for each specialty
       expect(pubmedService.search).toHaveBeenCalledTimes(4);
       expect(repository.upsertArticles).toHaveBeenCalledTimes(4);
     });
@@ -179,11 +177,8 @@ describe('MedicalWatchService', () => {
 
       await service.runDailyWatch();
 
-      // Should be called for all 4 specialties despite one failure
       expect(pubmedService.search).toHaveBeenCalledTimes(4);
-      // Should only upsert for successful fetches (3 out of 4)
       expect(repository.upsertArticles).toHaveBeenCalledTimes(3);
-      // Verify error was logged
       expect(Logger.prototype.error).toHaveBeenCalledWith(expect.stringContaining('Failed for specialty'));
     });
   });
@@ -240,7 +235,7 @@ describe('MedicalWatchService', () => {
       ]);
 
       await service.onModuleInit();
-      // Allow the fire-and-forget promise to settle
+      // onModuleInit fires seedIfEmpty without awaiting; flush microtasks.
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(repository.count).toHaveBeenCalled();

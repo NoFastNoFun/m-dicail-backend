@@ -23,6 +23,7 @@ import { TelemetryModule } from './features/telemetry/telemetry.module';
     AppConfigModule,
     DatabaseModule,
     ScheduleModule.forRoot(),
+    // Default 60 req/min; auth and deeplink handlers override with a tighter @Throttle.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     HealthModule,
     DeeplinkModule,

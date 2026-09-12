@@ -2,6 +2,7 @@ import { AnonymizationRule } from '../interfaces/anonymization.interface';
 
 const FRENCH_MONTHS = 'janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre';
 
+/** French PII detectors. Emails/phones/NIR before names so a phone is not treated as a name. */
 export const ANONYMIZATION_RULES: AnonymizationRule[] = [
   {
     type: 'EMAIL',

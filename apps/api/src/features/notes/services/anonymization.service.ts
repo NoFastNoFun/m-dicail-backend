@@ -6,6 +6,10 @@ const MIN_TOKEN_LENGTH = 3;
 
 @Injectable()
 export class AnonymizationService {
+  /**
+   * Scrubs PII from clinical text. Known patient identifiers are applied first
+   * (exact values), then generic regex rules. Name variants collapse to NOM.
+   */
   anonymize(rawText: string, identifiers?: KnownPatientIdentifiers | null): AnonymizationResult {
     if (!rawText.trim()) {
       return { anonymizedText: '', detections: [] };
@@ -23,12 +27,14 @@ export class AnonymizationService {
     }
 
     for (const rule of ANONYMIZATION_RULES) {
+      // Clone so lastIndex on global patterns does not leak across calls.
       const pattern = new RegExp(rule.pattern.source, rule.pattern.flags);
       let count = 0;
 
       text = text.replace(pattern, (match, ...groups) => {
         count++;
         if (rule.keepGroup0) {
+          // Keep honorific/title; only replace the captured name.
           return `${groups[0]} ${NOM_TOKEN}`;
         }
         return replacementToken(rule.type);
@@ -79,6 +85,7 @@ export class AnonymizationService {
       replacements.push({ value: identifiers.address.trim(), token: '[ADRESSE]', type: 'ADRESSE' });
     }
 
+    // Longest-first so "Marie Dupont" is replaced before "Marie" alone.
     replacements.sort((a, b) => b.value.length - a.value.length);
 
     let result = text;
