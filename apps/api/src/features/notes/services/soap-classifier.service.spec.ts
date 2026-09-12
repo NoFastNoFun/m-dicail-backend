@@ -1,4 +1,6 @@
 import { SoapClassifierService } from './soap-classifier.service';
+import { KNOWN_PATHOLOGY_TERMS } from '../constants/medical-root-dictionary.constants';
+import { isKnownPathologyTerm } from '../utils/medical-root-matcher';
 
 describe('SoapClassifierService', () => {
   let service: SoapClassifierService;
@@ -164,6 +166,53 @@ describe('SoapClassifierService', () => {
       expect(result.objective).toContain('contracture des trapèzes');
       expect(result.assessment).toContain('cervicalgie');
       expect(result.plan).toContain('séances de kinésithérapie');
+    });
+
+    it('classifies an isolated known pathology term as subjective via the root dictionary', () => {
+      const result = service.classify('tendinopathie du sus-épineux droit');
+      expect(result.subjective).toContain('tendinopathie');
+    });
+
+    it('classifies an unknown composed pathology term (prefix + suffix) as assessment via the root dictionary', () => {
+      const result = service.classify('suspicion de chondropathie fémoro-patellaire');
+      expect(result.assessment).toContain('chondropathie');
+    });
+
+    it('classifies a composed pathology term with a direction prefix as assessment', () => {
+      const result = service.classify('le patient présente une périostite tibiale marquée');
+      expect(result.assessment).toContain('périostite');
+    });
+
+    it('classifies a known (already composed) pathology term as subjective even if dictionary-derivable', () => {
+      const result = service.classify('périarthrite de hanche importante');
+      expect(result.subjective).toContain('périarthrite');
+    });
+
+    it('resolves many known pathology terms via Set lookup', () => {
+      const samples = [
+        'lombalgie',
+        'cervicalgie',
+        'tendinopathie',
+        'épicondylite',
+        'périarthrite',
+        'hernie discale',
+        'sacro-iliite',
+        'ostéoporose',
+        'arthrodèse',
+        'méniscectomie',
+      ];
+
+      for (const term of samples) {
+        expect(isKnownPathologyTerm(term)).toBe(true);
+      }
+
+      // Spot-check that seed terms are all present in the Set after normalization
+      for (const term of KNOWN_PATHOLOGY_TERMS) {
+        expect(isKnownPathologyTerm(term)).toBe(true);
+      }
+
+      const result = service.classify('tendinopathie; hernie discale; lombalgies');
+      expect(result.subjective).toContain('tendinopathie');
     });
   });
 });

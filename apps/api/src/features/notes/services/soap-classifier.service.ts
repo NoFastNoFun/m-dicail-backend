@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SoapNote, SoapSection } from '../interfaces/soap-note.interface';
 import { SOAP_KEYWORDS } from '../constants/soap-keywords.constants';
 import { SOAP_REGEX_RULES } from '../constants/soap-regex.constants';
+import { matchMedicalRootDictionary } from '../utils/medical-root-matcher';
 
 @Injectable()
 export class SoapClassifierService {
@@ -39,10 +40,16 @@ export class SoapClassifierService {
   private classifySentence(sentence: string): SoapSection {
     const lower = sentence.toLowerCase();
 
+    // 1) Phrase regex rules (plan / objective / assessment / subjective cues)
     for (const { pattern, section } of SOAP_REGEX_RULES) {
       if (pattern.test(lower)) return section;
     }
 
+    // 2) Medical-root dictionary (known Set lookup, then composed token scan)
+    const dictionarySection = matchMedicalRootDictionary(lower);
+    if (dictionarySection) return dictionarySection;
+
+    // 3) Keyword scoring fallback
     const scores: Record<SoapSection, number> = {
       subjective: 0,
       objective: 0,
