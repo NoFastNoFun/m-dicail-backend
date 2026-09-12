@@ -32,7 +32,7 @@ describe('SoapClassifierService', () => {
       expect(result.subjective).toContain("je n'arrive plus à lever le bras");
     });
 
-    it("classifies a range-of-motion measurement as objective via regex", () => {
+    it('classifies a range-of-motion measurement as objective via regex', () => {
       const result = service.classify('flexion lombaire : 60 degrés');
       expect(result.objective).toContain('flexion lombaire : 60 degrés');
       expect(result.subjective).toBe('');
@@ -106,7 +106,7 @@ describe('SoapClassifierService', () => {
       expect(result.objective).toContain('force musculaire');
     });
 
-    it("classifies joint range of motion as objective via regex", () => {
+    it('classifies joint range of motion as objective via regex', () => {
       const result = service.classify('amplitude articulaire : 90 degrés');
       expect(result.objective).toContain('amplitude articulaire');
     });
@@ -126,8 +126,8 @@ describe('SoapClassifierService', () => {
       expect(result.assessment).toContain('le tableau clinique');
     });
 
-    it("classifies a diagnostic hypothesis as assessment via regex", () => {
-      const result = service.classify("ce tableau est compatible avec une tendinopathie de la coiffe des rotateurs");
+    it('classifies a diagnostic hypothesis as assessment via regex', () => {
+      const result = service.classify('ce tableau est compatible avec une tendinopathie de la coiffe des rotateurs');
       expect(result.assessment).toContain('compatible avec');
     });
 
@@ -147,7 +147,7 @@ describe('SoapClassifierService', () => {
     });
 
     it('classifies a consultation-for-reason phrasing as subjective via regex', () => {
-      const result = service.classify('il consulte pour une douleur persistante à l\'épaule');
+      const result = service.classify("il consulte pour une douleur persistante à l'épaule");
       expect(result.subjective).toContain('consulte pour');
     });
 
