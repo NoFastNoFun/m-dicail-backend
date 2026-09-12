@@ -30,7 +30,6 @@ fi
 # Ports that must stay private. nginx reaches them over the docker network.
 PRIVATE_PORTS="8000 8001 5432"
 
-# What we actually open TCP connections to.
 TARGET="${ORIGIN:-$HOST}"
 
 fail=0
