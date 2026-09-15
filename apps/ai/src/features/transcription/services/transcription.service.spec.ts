@@ -33,6 +33,7 @@ describe('TranscriptionService', () => {
 
     await expect(service.transcribe({ file, language: 'fr', sessionId: 's1' })).resolves.toEqual({
       text: 'Bonjour',
+      sessionId: 's1',
     });
     expect(groqClient.transcribeFile).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -41,5 +42,30 @@ describe('TranscriptionService', () => {
         language: 'fr',
       }),
     );
+  });
+
+  it('echoes chunk metadata for progressive uploads', async () => {
+    (groqClient.transcribeFile as jest.Mock).mockResolvedValue('Segment');
+    const file: UploadedAudioFile = {
+      buffer: Buffer.from('RIFF'),
+      originalname: 'chunk.wav',
+      mimetype: 'audio/wav',
+      size: 4,
+    };
+
+    await expect(
+      service.transcribe({
+        file,
+        language: 'fr',
+        sessionId: 's1',
+        chunkIndex: 2,
+        isFinal: true,
+      }),
+    ).resolves.toEqual({
+      text: 'Segment',
+      sessionId: 's1',
+      chunkIndex: 2,
+      isFinal: true,
+    });
   });
 });
