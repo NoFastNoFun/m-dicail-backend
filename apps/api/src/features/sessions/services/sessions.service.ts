@@ -32,6 +32,7 @@ export class SessionsService {
       status: dto.status ?? SessionStatus.RECORDING,
       transcript: this.scrubText(dto.transcript ?? null, identifiers),
       transcriptIsAi: dto.transcript_is_ai ?? false,
+      tag: dto.tag ?? null,
     });
     return new SessionResponseDto(session);
   }
@@ -67,6 +68,7 @@ export class SessionsService {
       ...(dto.template_id !== undefined && { templateId: dto.template_id ?? null }),
       ...(dto.template_name !== undefined && { templateName: dto.template_name ?? null }),
       ...(dto.pathologies !== undefined && { pathologies: dto.pathologies ?? null }),
+      ...(dto.tag !== undefined && { tag: dto.tag ?? null }),
     });
     return new SessionResponseDto(updated);
   }
