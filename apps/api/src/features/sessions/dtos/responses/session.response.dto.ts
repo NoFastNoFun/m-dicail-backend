@@ -16,6 +16,7 @@ export class SessionResponseDto {
   @ApiProperty({ nullable: true }) declare template_name: string | null;
   @ApiProperty({ nullable: true, type: 'array' })
   declare pathologies: SessionPathology[] | null;
+  @ApiProperty({ nullable: true }) declare tag: string | null;
   @ApiProperty() declare created_at: Date;
   @ApiProperty() declare updated_at: Date;
 
@@ -33,6 +34,7 @@ export class SessionResponseDto {
     this.template_id = session.templateId;
     this.template_name = session.templateName;
     this.pathologies = session.pathologies;
+    this.tag = session.tag;
     this.created_at = session.createdAt;
     this.updated_at = session.updatedAt;
   }

@@ -57,6 +57,9 @@ export class RecordingSession {
   @Column({ name: 'pathologies', type: 'jsonb', nullable: true })
   declare pathologies: SessionPathology[] | null;
 
+  @Column({ name: 'tag', type: 'varchar', nullable: true })
+  declare tag: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
 

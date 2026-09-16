@@ -38,6 +38,7 @@ describe('SessionsService', () => {
     templateId: null,
     templateName: null,
     pathologies: null,
+    tag: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -81,6 +82,19 @@ describe('SessionsService', () => {
         }),
       );
       expect(result.id).toBe(mockSession.id);
+    });
+
+    it('creates a session with tag', async () => {
+      repository.save.mockResolvedValue({ ...mockSession, tag: 'bilan' });
+
+      const result = await service.create(userId, { tag: 'bilan' });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tag: 'bilan',
+        }),
+      );
+      expect(result.tag).toBe('bilan');
     });
 
     it('creates a session with explicit started_at and status', async () => {
@@ -210,6 +224,21 @@ describe('SessionsService', () => {
 
       expect(result.pathologies).toEqual(pathologies);
       expect(repository.save.mock.calls[0][0].pathologies).toEqual(pathologies);
+    });
+
+    it('updates tag', async () => {
+      const updated = { ...mockSession, tag: 'suivi' };
+      repository.findByIdForUser.mockResolvedValue(mockSession);
+      repository.save.mockResolvedValue(updated);
+
+      const result = await service.update(userId, mockSession.id, { tag: 'suivi' });
+
+      expect(result.tag).toBe('suivi');
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tag: 'suivi',
+        }),
+      );
     });
 
     it('throws SessionNotFoundException when session does not exist', async () => {
