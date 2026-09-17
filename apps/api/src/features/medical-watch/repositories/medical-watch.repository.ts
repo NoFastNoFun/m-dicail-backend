@@ -17,6 +17,11 @@ export class MedicalWatchRepository {
     return this.repo.count();
   }
 
+  /** Articles whose fetched_at is on or after [since] (typically start of today Paris). */
+  countFetchedSince(since: Date): Promise<number> {
+    return this.repo.createQueryBuilder('a').where('a.fetched_at >= :since', { since }).getCount();
+  }
+
   findAll(specialty?: MedicalWatchSpecialty, limit = 50): Promise<MedicalWatchArticle[]> {
     return this.repo.find({
       where: specialty ? { specialty } : {},

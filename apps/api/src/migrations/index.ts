@@ -13,6 +13,7 @@ import { AddTelemetryLogs1789000000000 } from './add-telemetry-logs';
 import { SetNullAppointmentsPatientFk1790000000000 } from './set-null-appointments-patient-fk';
 import { AddArchivedAtToPatients1791000000000 } from './add-archived-at-to-patients';
 import { AddTagToRecordingSessions1792000000000 } from './add-tag-to-recording-sessions';
+import { AddDeviceTokens1793000000000 } from './add-device-tokens';
 
 export const migrations = [
   Init1750000000000,
@@ -30,4 +31,5 @@ export const migrations = [
   SetNullAppointmentsPatientFk1790000000000,
   AddArchivedAtToPatients1791000000000,
   AddTagToRecordingSessions1792000000000,
+  AddDeviceTokens1793000000000,
 ];
