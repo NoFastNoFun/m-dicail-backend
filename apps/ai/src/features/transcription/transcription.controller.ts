@@ -22,6 +22,8 @@ export class TranscriptionController {
         file: { type: 'string', format: 'binary' },
         language: { type: 'string', example: 'fr' },
         session_id: { type: 'string' },
+        chunk_index: { type: 'integer', example: 0 },
+        is_final: { type: 'boolean', example: false },
       },
     },
   })
@@ -34,11 +36,37 @@ export class TranscriptionController {
     @UploadedFile() file: UploadedAudioFile,
     @Body('language') language?: string,
     @Body('session_id') sessionId?: string,
+    @Body('chunk_index') chunkIndexRaw?: string,
+    @Body('is_final') isFinalRaw?: string,
   ): Promise<TranscriptionResponseDto> {
     return this.transcriptionService.transcribe({
       file,
       language: language?.trim() || 'fr',
       sessionId: sessionId?.trim() || undefined,
+      chunkIndex: this.parseOptionalInt(chunkIndexRaw),
+      isFinal: this.parseOptionalBool(isFinalRaw),
     });
+  }
+
+  private parseOptionalInt(value?: string): number | undefined {
+    if (value == null || value.trim() === '') {
+      return undefined;
+    }
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  private parseOptionalBool(value?: string): boolean | undefined {
+    if (value == null || value.trim() === '') {
+      return undefined;
+    }
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1') {
+      return true;
+    }
+    if (normalized === 'false' || normalized === '0') {
+      return false;
+    }
+    return undefined;
   }
 }

@@ -16,8 +16,14 @@ export class TranscriptionService {
 
   constructor(private readonly groqClient: GroqClientService) {}
 
-  async transcribe(params: { file: UploadedAudioFile; language?: string; sessionId?: string }): Promise<TranscriptionResponseDto> {
-    const { file, language = 'fr', sessionId } = params;
+  async transcribe(params: {
+    file: UploadedAudioFile;
+    language?: string;
+    sessionId?: string;
+    chunkIndex?: number;
+    isFinal?: boolean;
+  }): Promise<TranscriptionResponseDto> {
+    const { file, language = 'fr', sessionId, chunkIndex, isFinal } = params;
     if (!file?.buffer && !file?.path && !file?.stream) {
       throw new BadRequestException('Fichier audio manquant');
     }
@@ -28,7 +34,8 @@ export class TranscriptionService {
     const tempPath = await this.persistUpload(file);
     try {
       if (sessionId) {
-        this.logger.log(`Transcribing session=${sessionId} bytes=${file.size}`);
+        const chunkLabel = chunkIndex === undefined ? 'single' : `chunk=${chunkIndex}${isFinal ? ' final' : ''}`;
+        this.logger.log(`Transcribing session=${sessionId} ${chunkLabel} bytes=${file.size}`);
       }
       const text = await this.groqClient.transcribeFile({
         filePath: tempPath,
@@ -36,7 +43,12 @@ export class TranscriptionService {
         mimeType: file.mimetype || 'audio/wav',
         language,
       });
-      return { text };
+      return {
+        text,
+        ...(sessionId !== undefined ? { sessionId } : {}),
+        ...(chunkIndex !== undefined ? { chunkIndex } : {}),
+        ...(isFinal !== undefined ? { isFinal } : {}),
+      };
     } finally {
       await unlink(tempPath).catch(() => undefined);
     }
