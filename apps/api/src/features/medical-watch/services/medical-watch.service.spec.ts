@@ -5,6 +5,7 @@ import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
 import { UsersService } from '@features/users/services/users.service';
 import { MailService } from '../../mail/services/mail.service';
+import { PushService } from '../../push/services/push.service';
 import { MedicalWatchArticle } from '../entities/medical-watch-article.entity';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
 
@@ -17,6 +18,7 @@ describe('MedicalWatchService', () => {
     findDigestOptInUsers: jest.Mock;
     updateDigestOptIn: jest.Mock;
   };
+  let pushService: jest.Mocked<Pick<PushService, 'sendToAllDevices'>>;
 
   const mockArticle: MedicalWatchArticle = {
     pmid: '12345',
@@ -51,6 +53,7 @@ describe('MedicalWatchService', () => {
       findAll: jest.fn(),
       upsertArticles: jest.fn(),
       count: jest.fn().mockResolvedValue(1),
+      countFetchedSince: jest.fn().mockResolvedValue(0),
     } as unknown as jest.Mocked<MedicalWatchRepository>;
 
     usersService = {
@@ -63,6 +66,10 @@ describe('MedicalWatchService', () => {
       sendMail: jest.fn(),
     };
 
+    pushService = {
+      sendToAllDevices: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MedicalWatchService,
@@ -70,6 +77,7 @@ describe('MedicalWatchService', () => {
         { provide: MedicalWatchRepository, useValue: repository },
         { provide: UsersService, useValue: usersService },
         { provide: MailService, useValue: mailService },
+        { provide: PushService, useValue: pushService },
       ],
     }).compile();
 
@@ -139,6 +147,7 @@ describe('MedicalWatchService', () => {
 
       expect(pubmedService.search).toHaveBeenCalledTimes(4);
       expect(repository.upsertArticles).toHaveBeenCalledTimes(4);
+      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
     });
 
     it('should continue processing other specialties if one fails', async () => {
@@ -200,6 +209,7 @@ describe('MedicalWatchService', () => {
 
       expect(pubmedService.search).toHaveBeenCalledTimes(4);
       expect(repository.upsertArticles).toHaveBeenCalledTimes(4);
+      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
@@ -240,6 +250,7 @@ describe('MedicalWatchService', () => {
 
       expect(repository.count).toHaveBeenCalled();
       expect(pubmedService.search).toHaveBeenCalled();
+      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
     });
 
     it('should not seed when articles already exist', async () => {
@@ -264,10 +275,36 @@ describe('MedicalWatchService', () => {
       await expect(service.updatePreferences('user-1', true)).resolves.toEqual({ digestOptIn: true });
     });
 
-    it('sendDailyDigest logs opted-in users', async () => {
+    it('sendDailyDigest skips FCM when no new articles', async () => {
       usersService.findDigestOptInUsers.mockResolvedValue([{ id: 'user-1' }]);
+      repository.countFetchedSince.mockResolvedValue(0);
+
       await service.sendDailyDigest();
+
       expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('1 opted-in'));
+      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
+      expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('skipping FCM digest'));
+    });
+
+    it('sendDailyDigest sends one FCM when new articles exist', async () => {
+      usersService.findDigestOptInUsers.mockResolvedValue([]);
+      repository.countFetchedSince.mockResolvedValue(3);
+
+      await service.sendDailyDigest();
+
+      expect(pushService.sendToAllDevices).toHaveBeenCalledWith({
+        title: 'Veille scientifique',
+        body: '3 nouveaux articles disponibles',
+        data: { type: 'medical_watch', count: '3' },
+      });
+    });
+
+    it('sendDailyDigest uses singular body for one article', async () => {
+      repository.countFetchedSince.mockResolvedValue(1);
+
+      await service.sendDailyDigest();
+
+      expect(pushService.sendToAllDevices).toHaveBeenCalledWith(expect.objectContaining({ body: '1 nouvel article disponible' }));
     });
   });
 });

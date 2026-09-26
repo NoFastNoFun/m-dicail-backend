@@ -101,6 +101,18 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   declare WEBAUTHN_ORIGIN?: string;
+
+  @IsString()
+  @IsOptional()
+  declare FIREBASE_PROJECT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  declare FIREBASE_CLIENT_EMAIL?: string;
+
+  @IsString()
+  @IsOptional()
+  declare FIREBASE_PRIVATE_KEY?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

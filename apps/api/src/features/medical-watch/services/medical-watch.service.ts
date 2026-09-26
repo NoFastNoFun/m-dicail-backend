@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { UsersService } from '@features/users/services/users.service';
 import { MailService } from '../../mail/services/mail.service';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
+import { PushService } from '../../push/services/push.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
 import { MedicalWatchArticleResponseDto } from '../dtos/responses/medical-watch-article.response.dto';
@@ -24,6 +25,7 @@ export class MedicalWatchService implements OnModuleInit {
     private readonly repository: MedicalWatchRepository,
     private readonly usersService: UsersService,
     private readonly mailService: MailService,
+    private readonly pushService: PushService,
   ) {}
 
   onModuleInit(): void {
@@ -42,12 +44,33 @@ export class MedicalWatchService implements OnModuleInit {
     this.logger.log('Daily medical watch completed.');
   }
 
-  /** 07:00 Europe/Paris digest email — not implemented yet (opt-in users only). */
+  /**
+   * 07:00 Europe/Paris: FCM digest when new articles were fetched today.
+   * Email digest remains unimplemented (mailService kept for that future path).
+   */
   @Cron('0 7 * * *', { timeZone: 'Europe/Paris' })
   async sendDailyDigest(): Promise<void> {
     const optedInUsers = await this.usersService.findDigestOptInUsers();
     this.logger.log(`TODO: medical watch digest email for ${optedInUsers.length} opted-in user(s) — not implemented yet`);
     void this.mailService;
+
+    const count = await this.repository.countFetchedSince(this.startOfTodayParis());
+    if (count === 0) {
+      this.logger.log('No new medical-watch articles today — skipping FCM digest');
+      return;
+    }
+
+    const body = count === 1 ? '1 nouvel article disponible' : `${count} nouveaux articles disponibles`;
+
+    await this.pushService.sendToAllDevices({
+      title: 'Veille scientifique',
+      body,
+      data: {
+        type: 'medical_watch',
+        count: String(count),
+      },
+    });
+    this.logger.log(`FCM medical-watch digest sent for ${count} new article(s)`);
   }
 
   async getPreferences(userId: string): Promise<MedicalWatchPreferencesResponseDto> {
@@ -105,5 +128,30 @@ export class MedicalWatchService implements OnModuleInit {
     } catch (err) {
       this.logger.error(`Failed for specialty "${specialty}": ${err}`);
     }
+  }
+
+  /** Start of calendar day in Europe/Paris, as a UTC Date for SQL comparison. */
+  private startOfTodayParis(): Date {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const year = Number(parts.find((p) => p.type === 'year')!.value);
+    const month = Number(parts.find((p) => p.type === 'month')!.value);
+    const day = Number(parts.find((p) => p.type === 'day')!.value);
+
+    // At 12:00 UTC on that calendar day, Paris hour reveals the UTC offset.
+    const probe = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+    const parisHour = Number(
+      new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Paris',
+        hour: '2-digit',
+        hourCycle: 'h23',
+      }).format(probe),
+    );
+    const offsetHours = parisHour - 12;
+    return new Date(Date.UTC(year, month - 1, day, -offsetHours, 0, 0, 0));
   }
 }
