@@ -20,6 +20,7 @@
     "pre-check": "pnpm run format && pnpm run lint:code && pnpm run typecheck && pnpm run dead-code && pnpm run test:coverage",
     "prepare": "husky || true",
     "test": "jest",
+    "keyword-test": "jest apps/api/src/features/notes/services/soap-classifier.service.spec.ts -t \"keyword vocabulary hygiene\"",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage --ci",
     "test:coverage": "jest --coverage --ci",

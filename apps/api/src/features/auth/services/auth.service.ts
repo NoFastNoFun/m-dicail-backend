@@ -29,7 +29,6 @@ interface MfaJwtPayload {
   purpose: 'mfa';
 }
 
-/** Dummy argon2id hash so unknown emails still pay the verify cost (no account-existence leak). */
 const DUMMY_PASSWORD_HASH = '$argon2id$v=19$m=65536,t=3,p=4$8aGOKFdYyhteMkxdv4E7zQ$tbpd2QVmEbOAL62yYfcZbtjJUQvvUzqCoOX/J2A2pcI';
 
 @Injectable()
@@ -71,7 +70,6 @@ export class AuthService {
 
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmail(dto.email);
-    // Always argon2.verify — dummy hash when the email is unknown — so timing does not leak existence.
     const hash = user?.hashedPassword ?? DUMMY_PASSWORD_HASH;
     const valid = await argon2.verify(hash, dto.password).catch(() => false);
     if (!user || !valid) throw new UnauthorizedException('Email ou mot de passe incorrect');

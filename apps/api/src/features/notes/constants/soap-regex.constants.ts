@@ -1,7 +1,6 @@
 import { SoapSection } from '../interfaces/soap-note.interface';
 
 /** High-precision French clinical phrase patterns; first match wins (order matters). */
-// Medical-root dictionary matching runs after these rules (Set / token scan), before keyword scoring.
 export const SOAP_REGEX_RULES: { pattern: RegExp; section: SoapSection }[] = [
   { pattern: /je\s+(vous\s+)?(prescris|prescrit|préconise|recommande)/i, section: 'plan' },
   { pattern: /\d+\s*séances/i, section: 'plan' },
@@ -14,6 +13,7 @@ export const SOAP_REGEX_RULES: { pattern: RegExp; section: SoapSection }[] = [
   { pattern: /(prochain|prochaine)\s+(rendez-vous|séance|consultation)/i, section: 'plan' },
   { pattern: /arrêt\s+de\s+travail/i, section: 'plan' },
   { pattern: /à\s+revoir\s+dans/i, section: 'plan' },
+  { pattern: /objectifs?\s+(de\s+(traitement|rééducation|prise\s+en\s+charge)|thérapeutiques?|à\s+(court|moyen|long)\s+terme)/i, section: 'plan' },
   { pattern: /(flexion|extension|rotation|abduction|adduction|inclinaison)\s*[:-]?\s*\d+/i, section: 'objective' },
   { pattern: /testing\s+.{0,30}\d\s*(sur|\/)\s*5/i, section: 'objective' },
   { pattern: /force\s+musculaire\s*[:-]?\s*\d\s*(sur|\/)\s*5/i, section: 'objective' },
@@ -26,6 +26,10 @@ export const SOAP_REGEX_RULES: { pattern: RegExp; section: SoapSection }[] = [
   { pattern: /(compatible|en\s+faveur\s+d['']un|évoque\s+un\s+tableau\s+de)/i, section: 'assessment' },
   { pattern: /diagnostic\s+(retenu|évoqué|posé)/i, section: 'assessment' },
   { pattern: /le\s+bilan\s+(montre|met\s+en\s+évidence|révèle)/i, section: 'assessment' },
+  { pattern: /contre[\s-]?indi(cation|qu)/i, section: 'assessment' },
+  { pattern: /accident\s+vasculaire/i, section: 'assessment' },
+  { pattern: /peur\s+du\s+mouvement/i, section: 'assessment' },
+  { pattern: /risque\s+de\s+chute/i, section: 'assessment' },
   { pattern: /depuis\s+\d+/i, section: 'subjective' },
   { pattern: /depuis\s+(quelques|plusieurs)/i, section: 'subjective' },
   { pattern: /(se\s+plaint|se\s+plaignant)\s+de/i, section: 'subjective' },

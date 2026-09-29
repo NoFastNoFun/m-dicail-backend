@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { SoapNote, SoapSection } from '../interfaces/soap-note.interface';
 import { SOAP_KEYWORDS } from '../constants/soap-keywords.constants';
 import { SOAP_REGEX_RULES } from '../constants/soap-regex.constants';
-import { matchMedicalRootDictionary } from '../utils/medical-root-matcher';
 
 /** Heuristic SOAP splitter for French clinical dictation (regex first, then keyword scores). */
 @Injectable()
@@ -47,11 +46,7 @@ export class SoapClassifierService {
       if (pattern.test(lower)) return section;
     }
 
-    // 2) Medical-root dictionary (known Set lookup, then composed token scan)
-    const dictionarySection = matchMedicalRootDictionary(lower);
-    if (dictionarySection) return dictionarySection;
-
-    // 3) Keyword scoring fallback
+    // 2) Keyword scoring fallback
     const scores: Record<SoapSection, number> = {
       subjective: 0,
       objective: 0,
@@ -66,9 +61,9 @@ export class SoapClassifierService {
       }
     }
 
-    const best = (Object.entries(scores) as [SoapSection, number][]).filter(([s]) => s !== 'other').reduce((max, cur) => (cur[1] > max[1] ? cur : max));
+    const [best, runnerUp] = (Object.entries(scores) as [SoapSection, number][]).filter(([s]) => s !== 'other').sort((a, b) => b[1] - a[1]);
 
     // Tie / zero hits → other (do not invent a section).
-    return best[1] > 0 ? best[0] : 'other';
+    return best[1] > runnerUp[1] ? best[0] : 'other';
   }
 }

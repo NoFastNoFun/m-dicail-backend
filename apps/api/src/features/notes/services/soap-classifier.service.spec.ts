@@ -1,6 +1,6 @@
 import { SoapClassifierService } from './soap-classifier.service';
-import { KNOWN_PATHOLOGY_TERMS } from '../constants/medical-root-dictionary.constants';
-import { isKnownPathologyTerm } from '../utils/medical-root-matcher';
+import { SoapSection } from '../interfaces/soap-note.interface';
+import { SOAP_KEYWORDS } from '../constants/soap-keywords.constants';
 
 describe('SoapClassifierService', () => {
   let service: SoapClassifierService;
@@ -168,51 +168,145 @@ describe('SoapClassifierService', () => {
       expect(result.plan).toContain('séances de kinésithérapie');
     });
 
-    it('classifies an isolated known pathology term as subjective via the root dictionary', () => {
+    it('classifies a pathology name as assessment', () => {
       const result = service.classify('tendinopathie du sus-épineux droit');
-      expect(result.subjective).toContain('tendinopathie');
+      expect(result.assessment).toContain('tendinopathie');
     });
 
-    it('classifies an unknown composed pathology term (prefix + suffix) as assessment via the root dictionary', () => {
+    it('classifies a rarer pathology name from the physio vocabulary as assessment', () => {
       const result = service.classify('suspicion de chondropathie fémoro-patellaire');
       expect(result.assessment).toContain('chondropathie');
     });
 
-    it('classifies a composed pathology term with a direction prefix as assessment', () => {
+    it('does not let a neutral third-person subject pull a diagnosis into subjective', () => {
       const result = service.classify('le patient présente une périostite tibiale marquée');
       expect(result.assessment).toContain('périostite');
     });
 
-    it('classifies a known (already composed) pathology term as subjective even if dictionary-derivable', () => {
-      const result = service.classify('périarthrite de hanche importante');
-      expect(result.subjective).toContain('périarthrite');
+    it('classifies a pathology name in a treatment sentence by its surrounding cues, not by the name alone', () => {
+      const result = service.classify('rééducation de la lombalgie avec exercices de renforcement');
+      expect(result.plan).toContain('rééducation');
     });
 
-    it('resolves many known pathology terms via Set lookup', () => {
-      const samples = [
-        'lombalgie',
-        'cervicalgie',
-        'tendinopathie',
-        'épicondylite',
-        'périarthrite',
-        'hernie discale',
-        'sacro-iliite',
-        'ostéoporose',
-        'arthrodèse',
-        'méniscectomie',
-      ];
+    it('returns other when two sections score equally instead of favouring the first one', () => {
+      const result = service.classify('douleur à la flexion');
+      expect(result.other).toContain('douleur à la flexion');
+    });
 
-      for (const term of samples) {
-        expect(isKnownPathologyTerm(term)).toBe(true);
+    it('does not match a keyword in the middle of an unrelated word', () => {
+      const result = service.classify("l'infirmière a utilisé une aiguille");
+      expect(result.other).toContain('aiguille');
+    });
+  });
+
+  describe('physiotherapy vocabulary', () => {
+    const cases: [string, SoapSection][] = [
+      ['Elle me dit que ça tire dans le mollet quand elle monte les escaliers.', 'subjective'],
+      ['Il est maçon et porte des charges lourdes toute la journée.', 'subjective'],
+      ['La douleur la réveille la nuit vers trois heures du matin.', 'subjective'],
+      ['Il prend des anti-inflammatoires depuis une semaine sans vraiment de soulagement.', 'subjective'],
+      ["Elle est très inquiète à l'idée de devoir se faire opérer.", 'subjective'],
+      ["Il n'arrive plus à se pencher pour lacer ses chaussures.", 'subjective'],
+      ["Ça craque dans l'épaule quand il lève le bras.", 'subjective'],
+      ['La gêne apparaît surtout en fin de journée après le travail sur ordinateur.', 'subjective'],
+      ['Elle dort mal à cause de la douleur, plusieurs réveils par nuit.', 'subjective'],
+      ['Il a fait une chute de vélo le mois dernier.', 'subjective'],
+      ['Elle décrit une sensation de fourmillements dans les doigts le matin.', 'subjective'],
+      ['Le patient évalue sa douleur à six sur dix.', 'subjective'],
+      ["Il aimerait pouvoir reprendre le tennis avant l'été.", 'subjective'],
+      ['Elle a été opérée du ménisque il y a trois mois.', 'subjective'],
+      ["L'inspection retrouve une tuméfaction au niveau de la malléole externe.", 'objective'],
+      ['La flexion du genou droit est limitée à 100 degrés.', 'objective'],
+      ['Le testing du moyen fessier est coté à 3 sur 5.', 'objective'],
+      ['Test de Lasègue positif à 40 degrés à gauche.', 'objective'],
+      ['Les réflexes rotuliens sont vifs et symétriques.', 'objective'],
+      ['On observe une amyotrophie du quadriceps par rapport au côté sain.', 'objective'],
+      ["Le signe de Trendelenburg est présent à l'appui unipodal droit.", 'objective'],
+      ['La distance doigts-sol est de vingt centimètres.', 'objective'],
+      ['Point douloureux à la pression du trapèze supérieur, avec contracture palpable.', 'objective'],
+      ['Œdème au godet au niveau de la cheville gauche.', 'objective'],
+      ["La marche se fait avec une boiterie d'esquive.", 'objective'],
+      ["Rotation interne de l'épaule très limitée, sensation de butée dure.", 'objective'],
+      ['Le test de Neer est positif, celui de Jobe aussi.', 'objective'],
+      ['Hématome et chaleur locale au niveau du mollet.', 'objective'],
+      ['Cotation de la force en abduction à 4 sur 5.', 'objective'],
+      ['Tout ceci évoque une tendinopathie du sus-épineux.', 'assessment'],
+      ["Il s'agit d'un syndrome fémoro-patellaire sans signe de gravité.", 'assessment'],
+      ['Pas de drapeau rouge, le pronostic est favorable.', 'assessment'],
+      ["Probable lombosciatique d'origine discale L5.", 'assessment'],
+      ['Le patient présente une capsulite rétractile en phase de raideur.', 'assessment'],
+      ["Cette douleur est en faveur d'une atteinte radiculaire.", 'assessment'],
+      ['Rupture partielle du ligament croisé antérieur probable.', 'assessment'],
+      ['Épicondylite aiguë chez un sujet actif.', 'assessment'],
+      ['Facteurs de risque : sédentarité et surpoids.', 'assessment'],
+      ['Déficit de mobilité de la hanche en rapport avec une coxarthrose débutante.', 'assessment'],
+      ['Contre-indication à la manipulation cervicale devant ces signes.', 'assessment'],
+      ['Hémiparésie droite sur accident vasculaire cérébral ischémique.', 'assessment'],
+      ['Ostéosynthèse du tibia il y a six mois.', 'subjective'],
+      ["Elle montre une épaule plus haute que l'autre.", 'objective'],
+      ['Il présente un aspect luisant de la peau.', 'objective'],
+      ["Elle est tombée dans l'escalier la semaine dernière.", 'subjective'],
+      ["Mon objectif, c'est de courir de nouveau avec mes enfants.", 'subjective'],
+      ["Je m'essouffle en montant un étage depuis ma pneumonie.", 'subjective'],
+      ["Je m'inquiète de ne pas retrouver ma mobilité d'avant.", 'subjective'],
+      ['Ça craque et ça brûle derrière la rotule quand je marche.', 'subjective'],
+      ['Porter des sacs me fait très mal aux lombaires.', 'subjective'],
+      ['Je ne dors plus que quatre heures par nuit à cause de la nuque.', 'subjective'],
+      ["Gibbosité thoracique droite au test d'Adams chez l'adolescente.", 'objective'],
+      ['La peur du mouvement entretient la douleur chronique.', 'assessment'],
+      ['Le risque de chute est élevé chez cette patiente.', 'assessment'],
+      ['La limitation fonctionnelle empêche la reprise du poste.', 'assessment'],
+      ['Fracture de fatigue du tibia à ne pas exclure.', 'assessment'],
+      ["Déconditionnement à l'effort avec chronicité des symptômes.", 'assessment'],
+      ['Reprise de la course à pied progressive avec alternance de marche.', 'plan'],
+      ['Objectif de traitement : gagner 120 degrés de flexion du genou.', 'plan'],
+      ["Drainage lymphatique manuel pour diminuer l'œdème.", 'plan'],
+      ['Bilan de fin de série à la dixième séance.', 'plan'],
+      ['On va commencer par du renforcement des fessiers et du gainage.', 'plan'],
+      ["Je lui conseille d'appliquer de la glace vingt minutes après l'effort.", 'plan'],
+      ['Reprise progressive de la course à pied dans quatre semaines.', 'plan'],
+      ["Un avis chirurgical est à envisager si pas d'amélioration.", 'plan'],
+      ['Voir avec le médecin traitant pour une IRM.', 'plan'],
+      ['Séance de mobilisations et de techniques de thérapie manuelle.', 'plan'],
+      ['Il devra éviter de porter des charges de plus de cinq kilos.', 'plan'],
+      ["Programme d'auto-exercices à faire à la maison deux fois par jour.", 'plan'],
+      ['Prévoir une réévaluation à la dixième séance.', 'plan'],
+      ['Mise en décharge avec deux cannes pendant trois semaines.', 'plan'],
+      ["Nous allons travailler la proprioception et l'équilibre unipodal.", 'plan'],
+      ['Pose de strapping et conseils sur le chaussage.', 'plan'],
+      ['Ultrasons et massage transverse profond sur le tendon.', 'plan'],
+      ["Objectif de traitement : retrouver l'élévation complète du bras.", 'plan'],
+      ["Il faut qu'elle continue les étirements tous les soirs.", 'plan'],
+      ["Bonjour, installez-vous sur la table s'il vous plaît.", 'other'],
+      ["Ok, on s'arrête là pour aujourd'hui.", 'other'],
+      ['Vous avez trouvé facilement le cabinet ?', 'other'],
+    ];
+
+    it.each(cases)('classifies "%s" as %s', (sentence, expected) => {
+      expect(service.classify(sentence)[expected]).toBe(sentence);
+    });
+  });
+
+  describe('keyword vocabulary hygiene', () => {
+    const entries = (Object.entries(SOAP_KEYWORDS) as [SoapSection, string[]][]).flatMap(([section, words]) => words.map((word) => ({ section, word })));
+
+    it('lists every keyword only once, across all sections', () => {
+      const seen = new Map<string, SoapSection>();
+      const duplicates: string[] = [];
+      for (const { section, word } of entries) {
+        const key = word.toLowerCase();
+        const previous = seen.get(key);
+        if (previous) duplicates.push(`${word} (${previous} and ${section})`);
+        seen.set(key, section);
       }
+      expect(duplicates).toEqual([]);
+    });
 
-      // Spot-check that seed terms are all present in the Set after normalization
-      for (const term of KNOWN_PATHOLOGY_TERMS) {
-        expect(isKnownPathologyTerm(term)).toBe(true);
-      }
-
-      const result = service.classify('tendinopathie; hernie discale; lombalgies');
-      expect(result.subjective).toContain('tendinopathie');
+    it('classifies every keyword, used alone, in its own section', () => {
+      const misplaced = entries
+        .filter(({ section, word }) => service.classify(word)[section] !== word)
+        .map(({ section, word }) => `${word} (expected ${section})`);
+      expect(misplaced).toEqual([]);
     });
   });
 });
