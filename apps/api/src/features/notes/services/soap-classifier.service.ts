@@ -61,9 +61,12 @@ export class SoapClassifierService {
       }
     }
 
-    const [best, runnerUp] = (Object.entries(scores) as [SoapSection, number][]).filter(([s]) => s !== 'other').sort((a, b) => b[1] - a[1]);
+    const ranked = (Object.entries(scores) as [SoapSection, number][]).filter(([s]) => s !== 'other').sort((a, b) => b[1] - a[1]);
+    const [best, runnerUp] = ranked;
 
-    // Tie / zero hits → other (do not invent a section).
-    return best[1] > runnerUp[1] ? best[0] : 'other';
+    if (best[1] === 0) return 'other';
+    if (best[1] > runnerUp[1]) return best[0];
+
+    return ranked.some(([section, score]) => section === 'plan' && score === best[1]) ? 'plan' : 'other';
   }
 }

@@ -188,9 +188,14 @@ describe('SoapClassifierService', () => {
       expect(result.plan).toContain('rééducation');
     });
 
-    it('returns other when two sections score equally instead of favouring the first one', () => {
+    it('returns other when two sections other than plan score equally instead of favouring the first one', () => {
       const result = service.classify('douleur à la flexion');
       expect(result.other).toContain('douleur à la flexion');
+    });
+
+    it('lets plan win a tie, because treatment sentences reuse finding vocabulary', () => {
+      const result = service.classify('on va faire des mobilisations en flexion et en extension');
+      expect(result.plan).toContain('mobilisations');
     });
 
     it('does not match a keyword in the middle of an unrelated word', () => {
@@ -276,6 +281,14 @@ describe('SoapClassifierService', () => {
       ['Objectif à six semaines : gagner en amplitude de flexion.', 'plan'],
       ["Apprenez à contracter le périnée avant l'effort.", 'plan'],
       ['Stimulation du moyen fessier en complément.', 'plan'],
+      ['Vous ferez trois séries de douze fentes avant chaque matin.', 'plan'],
+      ['Utilisez un bâton du côté opposé à la jambe opérée.', 'plan'],
+      ['Respirez lentement par le nez puis soufflez doucement en gonflant le ventre.', 'plan'],
+      ['Reprenez doucement, sans forcer, dès la semaine prochaine.', 'plan'],
+      ['Vous allez commencer par de la marche sur tapis.', 'plan'],
+      ["N'hésitez pas à m'appeler si la douleur augmente.", 'plan'],
+      ['Ne forcez jamais au-delà de la gêne.', 'plan'],
+      ['Vous pouvez vous rhabiller.', 'other'],
       ["Elle montre une épaule plus haute que l'autre.", 'objective'],
       ['Il présente un aspect luisant de la peau.', 'objective'],
       ["Elle est tombée dans l'escalier la semaine dernière.", 'subjective'],

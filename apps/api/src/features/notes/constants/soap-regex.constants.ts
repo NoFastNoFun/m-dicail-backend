@@ -18,6 +18,16 @@ export const SOAP_REGEX_RULES: { pattern: RegExp; section: SoapSection }[] = [
       /objectifs?\s+(de\s+(traitement|rééducation|prise\s+en\s+charge)|thérapeutiques?|à\s+(court|moyen|long)\s+terme|à\s+\w+\s+(semaines?|mois|jours?))/i,
     section: 'plan',
   },
+  {
+    pattern:
+      /\bvous\s+(ferez|devrez|continuerez|éviterez|porterez|reprendrez|prendrez|utiliserez|appliquerez|commencerez|allez\s+(faire|devoir|commencer|continuer|reprendre|utiliser|éviter|apprendre))/i,
+    section: 'plan',
+  },
+  {
+    pattern:
+      /(?:^|[,;:.]\s*|\s(?:puis|et|ensuite)\s)(utilisez|évitez|continuez|reprenez|appliquez|commencez\s+par|essayez\s+de|pensez\s+à|gardez|portez|étirez|massez|respirez\s+(calmement|lentement|doucement)|soufflez\s+(lentement|doucement)|n['’]hésitez\s+pas|ne\s+(forcez|portez|restez)\s+(pas|jamais))/i,
+    section: 'plan',
+  },
   { pattern: /(flexion|extension|rotation|abduction|adduction|inclinaison)\s*[:-]?\s*\d+/i, section: 'objective' },
   { pattern: /testing\s+.{0,30}\d\s*(sur|\/)\s*5/i, section: 'objective' },
   { pattern: /force\s+musculaire\s*[:-]?\s*\d\s*(sur|\/)\s*5/i, section: 'objective' },
