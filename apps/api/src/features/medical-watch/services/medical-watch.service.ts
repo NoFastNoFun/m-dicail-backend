@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { UsersService } from '@features/users/services/users.service';
-import { MailService } from '../../mail/services/mail.service';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { PushService } from '../../push/services/push.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
@@ -16,6 +15,9 @@ const WATCH_QUERIES: Record<MedicalWatchSpecialty, string> = {
   [MedicalWatchSpecialty.MANUAL_THERAPY]: 'manual therapy randomized controlled trial',
 };
 
+/** Only fetch articles published in the last N days, so each nightly run brings recent work. */
+const WATCH_RECENT_DAYS = 2;
+
 @Injectable()
 export class MedicalWatchService implements OnModuleInit {
   private readonly logger = new Logger(MedicalWatchService.name);
@@ -24,7 +26,6 @@ export class MedicalWatchService implements OnModuleInit {
     private readonly pubmedService: PubmedService,
     private readonly repository: MedicalWatchRepository,
     private readonly usersService: UsersService,
-    private readonly mailService: MailService,
     private readonly pushService: PushService,
   ) {}
 
@@ -44,15 +45,14 @@ export class MedicalWatchService implements OnModuleInit {
     this.logger.log('Daily medical watch completed.');
   }
 
-  /**
-   * 07:00 Europe/Paris: FCM digest when new articles were fetched today.
-   * Email digest remains unimplemented (mailService kept for that future path).
-   */
+  /** 07:00 Europe/Paris: FCM digest to opted-in users when new articles were fetched today. */
   @Cron('0 7 * * *', { timeZone: 'Europe/Paris' })
   async sendDailyDigest(): Promise<void> {
     const optedInUsers = await this.usersService.findDigestOptInUsers();
-    this.logger.log(`TODO: medical watch digest email for ${optedInUsers.length} opted-in user(s) — not implemented yet`);
-    void this.mailService;
+    if (optedInUsers.length === 0) {
+      this.logger.log('No opted-in users — skipping FCM digest');
+      return;
+    }
 
     const count = await this.repository.countFetchedSince(this.startOfTodayParis());
     if (count === 0) {
@@ -62,15 +62,18 @@ export class MedicalWatchService implements OnModuleInit {
 
     const body = count === 1 ? '1 nouvel article disponible' : `${count} nouveaux articles disponibles`;
 
-    await this.pushService.sendToAllDevices({
-      title: 'Veille scientifique',
-      body,
-      data: {
-        type: 'medical_watch',
-        count: String(count),
+    await this.pushService.sendToUsers(
+      optedInUsers.map((u) => u.id),
+      {
+        title: 'Veille scientifique',
+        body,
+        data: {
+          type: 'medical_watch',
+          count: String(count),
+        },
       },
-    });
-    this.logger.log(`FCM medical-watch digest sent for ${count} new article(s)`);
+    );
+    this.logger.log(`FCM medical-watch digest sent to ${optedInUsers.length} opted-in user(s) for ${count} new article(s)`);
   }
 
   async getPreferences(userId: string): Promise<MedicalWatchPreferencesResponseDto> {
@@ -108,7 +111,7 @@ export class MedicalWatchService implements OnModuleInit {
   private async fetchAndStore(specialty: MedicalWatchSpecialty): Promise<void> {
     const query = WATCH_QUERIES[specialty];
     try {
-      const articles = await this.pubmedService.search(query, 10);
+      const articles = await this.pubmedService.search(query, 10, { recentDays: WATCH_RECENT_DAYS });
       if (articles.length === 0) {
         this.logger.warn(`No articles returned for specialty: "${specialty}"`);
         return;

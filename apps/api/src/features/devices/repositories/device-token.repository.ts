@@ -30,4 +30,9 @@ export class DeviceTokenRepository {
   findAllTokens(): Promise<DeviceToken[]> {
     return this.repo.find();
   }
+
+  findByUserIds(userIds: string[]): Promise<DeviceToken[]> {
+    if (userIds.length === 0) return Promise.resolve([]);
+    return this.repo.find({ where: { userId: In(userIds) } });
+  }
 }

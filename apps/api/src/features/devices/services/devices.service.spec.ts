@@ -11,6 +11,7 @@ describe('DevicesService', () => {
       deleteByToken: jest.fn().mockResolvedValue(undefined),
       deleteByTokens: jest.fn().mockResolvedValue(undefined),
       findAllTokens: jest.fn().mockResolvedValue([]),
+      findByUserIds: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<DeviceTokenRepository>;
 
     service = new DevicesService(repository);
@@ -39,6 +40,22 @@ describe('DevicesService', () => {
     ]);
 
     await expect(service.findAllTokens()).resolves.toEqual([{ userId: 'user-1', token: 'token-a' }]);
+  });
+
+  it('findTokensByUserIds maps entity rows for the given users', async () => {
+    repository.findByUserIds.mockResolvedValue([
+      {
+        id: '1',
+        userId: 'user-1',
+        token: 'token-a',
+        platform: 'android',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    await expect(service.findTokensByUserIds(['user-1'])).resolves.toEqual([{ userId: 'user-1', token: 'token-a' }]);
+    expect(repository.findByUserIds).toHaveBeenCalledWith(['user-1']);
   });
 
   it('deleteInvalidTokens delegates to the repository', async () => {

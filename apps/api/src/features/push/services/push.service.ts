@@ -69,6 +69,23 @@ export class PushService implements OnModuleInit {
     await this.sendToTokens(tokens, payload);
   }
 
+  /** Send one notification to every device registered by the given users. */
+  async sendToUsers(userIds: string[], payload: PushPayload): Promise<void> {
+    if (!this.ready) {
+      this.logger.warn('Skipping FCM send — Firebase Admin not configured');
+      return;
+    }
+
+    const rows = await this.devicesService.findTokensByUserIds(userIds);
+    const tokens = [...new Set(rows.map((r) => r.token))];
+    if (tokens.length === 0) {
+      this.logger.log('No device tokens to notify for the given users');
+      return;
+    }
+
+    await this.sendToTokens(tokens, payload);
+  }
+
   private async sendToTokens(tokens: string[], payload: PushPayload): Promise<void> {
     const chunkSize = 500;
     const invalid: string[] = [];

@@ -4,7 +4,6 @@ import { MedicalWatchService } from './medical-watch.service';
 import { PubmedService } from '../../pubmed/services/pubmed.service';
 import { MedicalWatchRepository } from '../repositories/medical-watch.repository';
 import { UsersService } from '@features/users/services/users.service';
-import { MailService } from '../../mail/services/mail.service';
 import { PushService } from '../../push/services/push.service';
 import { MedicalWatchArticle } from '../entities/medical-watch-article.entity';
 import { MedicalWatchSpecialty } from '../enums/medical-watch-specialty.enum';
@@ -18,7 +17,7 @@ describe('MedicalWatchService', () => {
     findDigestOptInUsers: jest.Mock;
     updateDigestOptIn: jest.Mock;
   };
-  let pushService: jest.Mocked<Pick<PushService, 'sendToAllDevices'>>;
+  let pushService: jest.Mocked<Pick<PushService, 'sendToUsers'>>;
 
   const mockArticle: MedicalWatchArticle = {
     pmid: '12345',
@@ -62,12 +61,8 @@ describe('MedicalWatchService', () => {
       updateDigestOptIn: jest.fn(),
     };
 
-    const mailService = {
-      sendMail: jest.fn(),
-    };
-
     pushService = {
-      sendToAllDevices: jest.fn().mockResolvedValue(undefined),
+      sendToUsers: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -76,7 +71,6 @@ describe('MedicalWatchService', () => {
         { provide: PubmedService, useValue: pubmedService },
         { provide: MedicalWatchRepository, useValue: repository },
         { provide: UsersService, useValue: usersService },
-        { provide: MailService, useValue: mailService },
         { provide: PushService, useValue: pushService },
       ],
     }).compile();
@@ -146,8 +140,9 @@ describe('MedicalWatchService', () => {
       await service.runDailyWatch();
 
       expect(pubmedService.search).toHaveBeenCalledTimes(4);
+      expect(pubmedService.search).toHaveBeenCalledWith('physiotherapy rehabilitation', 10, { recentDays: 2 });
       expect(repository.upsertArticles).toHaveBeenCalledTimes(4);
-      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
+      expect(pushService.sendToUsers).not.toHaveBeenCalled();
     });
 
     it('should continue processing other specialties if one fails', async () => {
@@ -209,7 +204,7 @@ describe('MedicalWatchService', () => {
 
       expect(pubmedService.search).toHaveBeenCalledTimes(4);
       expect(repository.upsertArticles).toHaveBeenCalledTimes(4);
-      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
+      expect(pushService.sendToUsers).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
@@ -250,7 +245,7 @@ describe('MedicalWatchService', () => {
 
       expect(repository.count).toHaveBeenCalled();
       expect(pubmedService.search).toHaveBeenCalled();
-      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
+      expect(pushService.sendToUsers).not.toHaveBeenCalled();
     });
 
     it('should not seed when articles already exist', async () => {
@@ -281,18 +276,27 @@ describe('MedicalWatchService', () => {
 
       await service.sendDailyDigest();
 
-      expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('1 opted-in'));
-      expect(pushService.sendToAllDevices).not.toHaveBeenCalled();
+      expect(pushService.sendToUsers).not.toHaveBeenCalled();
       expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('skipping FCM digest'));
     });
 
-    it('sendDailyDigest sends one FCM when new articles exist', async () => {
+    it('sendDailyDigest skips FCM when no user opted in', async () => {
       usersService.findDigestOptInUsers.mockResolvedValue([]);
       repository.countFetchedSince.mockResolvedValue(3);
 
       await service.sendDailyDigest();
 
-      expect(pushService.sendToAllDevices).toHaveBeenCalledWith({
+      expect(pushService.sendToUsers).not.toHaveBeenCalled();
+      expect(repository.countFetchedSince).not.toHaveBeenCalled();
+    });
+
+    it('sendDailyDigest sends FCM only to opted-in users when new articles exist', async () => {
+      usersService.findDigestOptInUsers.mockResolvedValue([{ id: 'user-1' }, { id: 'user-2' }]);
+      repository.countFetchedSince.mockResolvedValue(3);
+
+      await service.sendDailyDigest();
+
+      expect(pushService.sendToUsers).toHaveBeenCalledWith(['user-1', 'user-2'], {
         title: 'Veille scientifique',
         body: '3 nouveaux articles disponibles',
         data: { type: 'medical_watch', count: '3' },
@@ -300,11 +304,12 @@ describe('MedicalWatchService', () => {
     });
 
     it('sendDailyDigest uses singular body for one article', async () => {
+      usersService.findDigestOptInUsers.mockResolvedValue([{ id: 'user-1' }]);
       repository.countFetchedSince.mockResolvedValue(1);
 
       await service.sendDailyDigest();
 
-      expect(pushService.sendToAllDevices).toHaveBeenCalledWith(expect.objectContaining({ body: '1 nouvel article disponible' }));
+      expect(pushService.sendToUsers).toHaveBeenCalledWith(['user-1'], expect.objectContaining({ body: '1 nouvel article disponible' }));
     });
   });
 });

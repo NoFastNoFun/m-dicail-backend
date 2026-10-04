@@ -19,6 +19,11 @@ interface MeshCandidate {
   count?: number;
 }
 
+export interface PubmedSearchOptions {
+  /** Restrict to articles published in the last N days (NCBI `datetype=pdat` + `reldate`), newest first. */
+  recentDays?: number;
+}
+
 @Injectable()
 export class PubmedService {
   private readonly logger = new Logger(PubmedService.name);
@@ -30,8 +35,8 @@ export class PubmedService {
     this.email = config.get<string>('NCBI_EMAIL') || undefined;
   }
 
-  async search(query: string, maxResults: number): Promise<ArticleResponseDto[]> {
-    const pmids = await this.esearch('pubmed', query, maxResults);
+  async search(query: string, maxResults: number, options: PubmedSearchOptions = {}): Promise<ArticleResponseDto[]> {
+    const pmids = await this.esearch('pubmed', query, maxResults, options.recentDays);
     if (pmids.length === 0) return [];
     return this.efetch(pmids);
   }
@@ -312,8 +317,9 @@ export class PubmedService {
     }
   }
 
-  private async esearch(db: string, query: string, maxResults: number): Promise<string[]> {
-    const params = this.buildParams({ db, term: query, retmax: maxResults, retmode: 'json' });
+  private async esearch(db: string, query: string, maxResults: number, recentDays?: number): Promise<string[]> {
+    const dateFilter: Record<string, string | number> = recentDays ? { datetype: 'pdat', reldate: recentDays, sort: 'pub_date' } : {};
+    const params = this.buildParams({ db, term: query, retmax: maxResults, retmode: 'json', ...dateFilter });
     const res = await this.ncbiFetch(`${NCBI_BASE_URL}/esearch.fcgi?${params}`);
     if (!res.ok) {
       throw new BadGatewayException(`NCBI esearch error (${res.status})`);

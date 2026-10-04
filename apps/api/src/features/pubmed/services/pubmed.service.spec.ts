@@ -90,6 +90,25 @@ describe('PubmedService', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('adds the publication-date filter only when recentDays is given', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ esearchresult: { idlist: [] } }),
+    });
+
+    await service.search('query', 10, { recentDays: 2 });
+    const filteredUrl = new URL((global.fetch as jest.Mock).mock.calls[0][0] as string);
+    expect(filteredUrl.searchParams.get('datetype')).toBe('pdat');
+    expect(filteredUrl.searchParams.get('reldate')).toBe('2');
+    expect(filteredUrl.searchParams.get('sort')).toBe('pub_date');
+
+    await service.search('query', 10);
+    const plainUrl = new URL((global.fetch as jest.Mock).mock.calls[1][0] as string);
+    expect(plainUrl.searchParams.has('datetype')).toBe(false);
+    expect(plainUrl.searchParams.has('reldate')).toBe(false);
+    expect(plainUrl.searchParams.has('sort')).toBe(false);
+  });
+
   it('sends User-Agent and NCBI identification params', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,

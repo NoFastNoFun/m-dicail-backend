@@ -17,6 +17,10 @@ export class DevicesService {
     return this.deviceTokenRepository.findAllTokens().then((rows) => rows.map((r) => ({ userId: r.userId, token: r.token })));
   }
 
+  findTokensByUserIds(userIds: string[]): Promise<{ userId: string; token: string }[]> {
+    return this.deviceTokenRepository.findByUserIds(userIds).then((rows) => rows.map((r) => ({ userId: r.userId, token: r.token })));
+  }
+
   deleteInvalidTokens(tokens: string[]): Promise<void> {
     return this.deviceTokenRepository.deleteByTokens(tokens);
   }

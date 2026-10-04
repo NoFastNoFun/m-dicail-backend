@@ -18,7 +18,7 @@ jest.mock('firebase-admin', () => ({
 
 describe('PushService', () => {
   let service: PushService;
-  let devicesService: jest.Mocked<Pick<DevicesService, 'findAllTokens' | 'deleteInvalidTokens'>>;
+  let devicesService: jest.Mocked<Pick<DevicesService, 'findAllTokens' | 'findTokensByUserIds' | 'deleteInvalidTokens'>>;
   let config: { get: jest.Mock };
 
   beforeEach(() => {
@@ -27,6 +27,7 @@ describe('PushService', () => {
 
     devicesService = {
       findAllTokens: jest.fn().mockResolvedValue([]),
+      findTokensByUserIds: jest.fn().mockResolvedValue([]),
       deleteInvalidTokens: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -119,6 +120,33 @@ describe('PushService', () => {
       }),
     );
     expect(devicesService.deleteInvalidTokens).not.toHaveBeenCalled();
+  });
+
+  it('sendToUsers sends only to the given users\' tokens', async () => {
+    config.get.mockImplementation((key: string) => {
+      const map: Record<string, string> = {
+        FIREBASE_PROJECT_ID: 'proj',
+        FIREBASE_CLIENT_EMAIL: 'sa@proj.iam.gserviceaccount.com',
+        FIREBASE_PRIVATE_KEY: 'key',
+      };
+      return map[key];
+    });
+    const admin = jest.requireMock('firebase-admin') as { apps: unknown[] };
+    admin.apps.length = 0;
+
+    service = new PushService(config as unknown as ConfigService, devicesService as unknown as DevicesService);
+    service.onModuleInit();
+    devicesService.findTokensByUserIds.mockResolvedValue([
+      { userId: 'u1', token: 'tok-1' },
+      { userId: 'u1', token: 'tok-1' },
+    ]);
+    sendEachForMulticast.mockResolvedValue({ successCount: 1, failureCount: 0, responses: [{ success: true }] });
+
+    await service.sendToUsers(['u1'], { title: 't', body: 'b' });
+
+    expect(devicesService.findTokensByUserIds).toHaveBeenCalledWith(['u1']);
+    expect(devicesService.findAllTokens).not.toHaveBeenCalled();
+    expect(sendEachForMulticast).toHaveBeenCalledWith(expect.objectContaining({ tokens: ['tok-1'] }));
   });
 
   it('prunes invalid registration tokens', async () => {

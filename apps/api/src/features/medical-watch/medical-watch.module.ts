@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '@features/users/users.module';
-import { MailModule } from '../mail/mail.module';
 import { PushModule } from '../push/push.module';
 import { MedicalWatchArticle } from './entities/medical-watch-article.entity';
 import { MedicalWatchRepository } from './repositories/medical-watch.repository';
@@ -10,7 +9,7 @@ import { MedicalWatchController } from './medical-watch.controller';
 import { PubmedModule } from '../pubmed/pubmed.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MedicalWatchArticle]), PubmedModule, UsersModule, MailModule, PushModule],
+  imports: [TypeOrmModule.forFeature([MedicalWatchArticle]), PubmedModule, UsersModule, PushModule],
   providers: [MedicalWatchService, MedicalWatchRepository],
   controllers: [MedicalWatchController],
 })
