@@ -122,7 +122,7 @@ describe('PushService', () => {
     expect(devicesService.deleteInvalidTokens).not.toHaveBeenCalled();
   });
 
-  it('sendToUsers sends only to the given users\' tokens', async () => {
+  it("sendToUsers sends only to the given users' tokens", async () => {
     config.get.mockImplementation((key: string) => {
       const map: Record<string, string> = {
         FIREBASE_PROJECT_ID: 'proj',
