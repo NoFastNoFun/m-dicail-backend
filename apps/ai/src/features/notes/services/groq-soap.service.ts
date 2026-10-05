@@ -78,7 +78,7 @@ export class GroqSoapService {
       throw new BadGatewayException('Reponse de generation SOAP invalide');
     }
 
-    if (typeof parsed !== 'object' || parsed === null) {
+    if (parsed === null) {
       throw new BadGatewayException('Reponse de generation SOAP invalide');
     }
 
