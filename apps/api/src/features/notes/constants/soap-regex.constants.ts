@@ -1,6 +1,5 @@
 import { SoapSection } from '../interfaces/soap-note.interface';
 
-/** High-precision French clinical phrase patterns; first match wins (order matters). */
 export const SOAP_REGEX_RULES: { pattern: RegExp; section: SoapSection }[] = [
   { pattern: /je\s+(vous\s+)?(prescris|prescrit|préconise|recommande)/i, section: 'plan' },
   { pattern: /\d+\s*séances/i, section: 'plan' },

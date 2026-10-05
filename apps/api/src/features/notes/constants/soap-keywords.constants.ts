@@ -1,11 +1,5 @@
 import { SoapSection } from '../interfaces/soap-note.interface';
 
-/**
- * French physiotherapy lexicon for keyword scoring (fixtures/product strings stay French).
- * Matching is a plain lowercase substring test: "douleur" also covers "douleurs", and a keyword
- * must not be a fragment of an unrelated word (hence "aiguë" rather than "aigu", which hits "aiguille").
- * Keep each keyword in one section only; the spec checks that every keyword resolves to its own section.
- */
 export const SOAP_KEYWORDS: Record<SoapSection, string[]> = {
   subjective: [
     // pain and sensations reported by the patient
