@@ -301,3 +301,13 @@ WEBAUTHN_ORIGIN=https://medicail.nf2.tech
 | GET | `/api/v1/auth/passkeys` | ✅ | List passkeys |
 | DELETE | `/api/v1/auth/passkeys/:id` | ✅ | Remove passkey |
 | GET/PATCH | `/api/v1/medical-watch/preferences` | ✅ | Digest opt-in (email CRON stub at 07:00 Paris) |
+
+## Contributors
+
+| GitHub username | First and last name |
+| --- | --- |
+| [`Setsudan`](https://github.com/Setsudan) | Ethan Launay |
+| [`Daiiruin`](https://github.com/Daiiruin) | Arsène Dobrovolskyy |
+| [`TCaen`](https://github.com/TCaen) | Thomas Caen |
+| [`YOUGBOY95`](https://github.com/YOUGBOY95) | Nathan Pinard |
+| [`ShikiSulli`](https://github.com/ShikiSulli) | Benjamin Bandasavanh |
